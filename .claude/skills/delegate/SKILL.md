@@ -11,6 +11,7 @@ the hand-off for them, in a few cheap tool calls, and spend Claude's allowance o
 ## 1. Route it (one command)
 
 1. Name the files the task will likely touch. Use `./securax brief "TASK"` or a quick `grep -l`; do not read whole files.
+   For a GitHub search, use the GitHub tools first; else `lifecycle/ghsearch.py` (`search(...)`) waits and retries once on a rate limit.
 2. Run `python3 lifecycle/route.py "TASK" --files F1 F2 ... --json`.
 3. Read `tier`:
    - **strong**: do it yourself, as AGENTS.md says. This covers security, crypto, auth, sync or merge logic, regulator maps, or many areas. Stop reading this skill.

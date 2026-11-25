@@ -37,9 +37,9 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with: { ref: "${{ env.TAG }}" }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with: { python-version: "3.12" }
       - run: pip install -r apps/llm-gateway/requirements-dev.txt pyyaml ruff
       - name: "Tag matches VERSION"
@@ -60,7 +60,7 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with: { ref: "${{ env.TAG }}" }
       - name: Build versioned gateway image
         run: |
@@ -68,11 +68,17 @@ jobs:
             --build-arg SECURAX_VERSION="${TAG#v}" \
             --build-arg GIT_COMMIT="$(git rev-parse --short=7 HEAD)" apps/llm-gateway
       - name: SBOM (CycloneDX)
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0
         with:
           image: securax/llm-gateway:${{ env.TAG }}
           format: cyclonedx-json
           output-file: sbom-${{ env.TAG }}.cdx.json
+      - name: SBOM of the source (CycloneDX)
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0
+        with:
+          path: "."
+          format: cyclonedx-json
+          output-file: sbom-source-${{ env.TAG }}.cdx.json
       - name: "This version's notes, from CHANGELOG.md"
         run: python3 tools/release.py notes "${TAG#v}" > release-notes.md
       # What a user downloads (doc 75): the source as .tar.gz and .zip, the two installers with this repository's name
@@ -87,13 +93,14 @@ jobs:
           REPO_SLUG="${GITHUB_REPOSITORY}" python3 governance/config.py render dist/install.sh dist/install.ps1
           if grep -l '{{REPO_SLUG}}' dist/install.sh dist/install.ps1; then echo "::error::installer not rendered"; exit 1; fi
           cp "sbom-${TAG}.cdx.json" dist/
+          cp "sbom-source-${TAG}.cdx.json" dist/
           (cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
       - name: Build provenance (signed, verifiable)
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2
         with:
           subject-path: "dist/*"
       - name: "Draft the GitHub Release with every file attached"
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3  # v3
         with:
           tag_name: ${{ env.TAG }}
           name: SecuRAX ${{ env.TAG }}

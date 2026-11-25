@@ -4,6 +4,7 @@
   <url><loc>{{SITE_URL}}nbfc/</loc></url>
   <url><loc>{{SITE_URL}}assess/</loc></url>
   <url><loc>{{SITE_URL}}personal/</loc></url>
+  <url><loc>{{SITE_URL}}explainer/</loc></url>
   <url><loc>{{SITE_URL}}docs/</loc></url>
   <url><loc>{{SITE_URL}}docs/sitemap.xml</loc></url>
 </urlset>

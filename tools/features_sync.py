@@ -15,7 +15,8 @@ From products.json (what SecuRAX sells: each product, its price and its screensh
   * website/index.html           the "Products" section, with each product's real screenshot    <!-- products:start --> ... <!-- products:end -->
   * docs/securax/106-...md       the catalogue and price table in doc 106                         (same markers)
 A product's light is the weakest light of its features, so no page claims more than the code proves.
-From the code itself it writes the FACTS (how many tests, journeys, mapped frameworks, docs) wherever a page shows one as
+From the code itself it writes the FACTS (how many tests, journeys, mapped frameworks, docs; the red-team score from
+redteam/results.json and the refusal budget from lifecycle/fitness.json) wherever a page shows one as
 <!-- fact:NAME -->123<!-- /fact -->, in the README, the website, the docs and the portal pages.
 Each feature's status light comes from its guide's light in docs/status.yml; its docs link from REPO_SLUG in brand.env.
 It also refuses a feature whose command, guide or nav entry does not exist. Standard library only.
@@ -37,7 +38,7 @@ BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "index.md": "
 PERSONAL_GROUP = "Your own tools"  # the group the personal app sells; the rest of the estate is one link away
 PRODUCTS = ROOT / "products.json"
 PRODUCT_BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "securax" / "106-WHO-SECURAX-IS-FOR.md": "docs"}
-FACT_FILES = ["README.md", "website/index.html", "portal/explainer.html", "docs/**/*.md"]
+FACT_FILES = ["README.md", "website/index.html", "website/*/index.html", "docs/**/*.md"]
 LIGHT = {"green": ("🟢", "l-g", "Built and proven"), "amber": ("🟡", "l-a", "Partly built"), "red": ("🔴", "l-r", "Not built yet")}
 E = html.escape
 
@@ -89,9 +90,13 @@ def facts() -> dict[str, str]:
     journeys = len(re.findall(r"^@journey\(", (ROOT / "sandbox" / "run.py").read_text("utf-8"), re.M))
     maps = re.search(r"^MAPS = \{(.*?)\}", (ROOT / "governance" / "regmap.py").read_text("utf-8"), re.M | re.S)
     docs = [f for f in files if re.match(r"docs/securax/\d\d-.*\.md$", f)]
+    # the red-team scorecard (redteam/run_attacks.py writes it) and the refusal budget fitness holds (block-latency-p95)
+    red = json.loads((ROOT / "redteam" / "results.json").read_text("utf-8"))
+    budget = json.loads((ROOT / "lifecycle" / "fitness.json").read_text("utf-8"))["budgets"]["block_latency_p95_ms"]
     # tests rounded down to the nearest 50 ("750+"), so adding one test does not make every page stale
     return {"tests": f"{tests // 50 * 50}+", "journeys": str(journeys), "frameworks": str(len(re.findall(r'"[\w-]+":\s*"regmap-', maps.group(1))) if maps else 0),
-            "docs": str(len(docs)), "features": str(len(load()["features"]))}
+            "docs": str(len(docs)), "features": str(len(load()["features"])),
+            "attacks": f"{red['defended']} of {red['total_attacks']}", "refuse_ms": str(budget)}
 
 
 def problems(data: dict | None = None) -> list[str]:
@@ -239,11 +244,15 @@ def block_personal(data: dict, new: int = 3) -> str:
         return (f'    <div class="card">{tag}<h3>{E(f["name"])}</h3><p>{E(f["outcome"])}</p>'
                 f'<code>{E(f["open"]["cmd"])}</code><br><span class="light {cls}">{label}</span></div>')
 
+    cards = [card(i, f) for i, f in enumerate(mine)]
+    shown = 3   # the newest three stay open; the rest ride in one fold, so a phone is not met with a wall of cards
+    fold = (f'  <details class="more"><summary>See all {len(mine)}</summary>\n  <div class="wrap grid3">\n' + "\n".join(cards[shown:])
+            + "\n  </div></details>\n") if len(cards) > shown else ""
     return ('<section id="tools">\n  <div class="wrap center">\n    <span class="kicker">Your own tools</span>\n'
             "    <h2>What it does for you today.</h2>\n"
-            f'    <p class="sub">{len(mine)} tools for one person, newest first, each with the one command that opens it. They are part of the '
+            f'    <p class="sub">{len(mine)} tools for one person, newest first. They are part of the '
             f'<a href="../#estate"><!-- fact:features -->{len(data["features"])}<!-- /fact --> things SecuRAX does</a>.</p>\n'
-            '  </div>\n  <div class="wrap grid3">\n' + "\n".join(card(i, f) for i, f in enumerate(mine)) + "\n  </div>\n</section>")
+            '  </div>\n  <div class="wrap grid3">\n' + "\n".join(cards[:shown]) + "\n  </div>\n" + fold + "</section>")
 
 
 def _table(data: dict, link) -> str:

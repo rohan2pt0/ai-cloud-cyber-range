@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SecuRAX · The two-minute tour</title>
+<meta name="description" content="SecuRAX in six short scenes: a guardian on your side that keeps a company's data out of AI, runs a person's life on one calm screen, and keeps working on your own machines.">
+<meta property="og:title" content="SecuRAX · The two-minute tour">
+<meta property="og:description" content="Your people use AI. Your data walks out with it. Here is a calmer way, in six short scenes.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{SITE_URL}}explainer/">
+<meta property="og:image" content="{{SITE_URL}}img/life-lock.webp">
+<link rel="canonical" href="{{SITE_URL}}explainer/">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../site.css">
+<!-- The shared look (guiding-map/shared/lux.css) and the shared page kit (website/page.css), copied in by website/build.sh; no private copy here.
+     The visual tour (one source: this file). Seven scenes, one idea each: the problem, the guardian, a company, a person, a leader,
+     why trust it, one next step. Every number is a fact marker that tools/features_sync.py fills from the code. -->
+<link rel="stylesheet" href="../shared/lux.css">
+<link rel="stylesheet" href="../page.css">
+<style>
+/* The tour's own parts (the shared kit is page.css): the guardian and the devices it guards, the three steps of Shield,
+   four phones in a row, and the facts that close the trust scene. */
+.scene .wrap{max-width:1080px}
+.scene h2{max-width:15em;margin-inline:auto}
+.scene .sub{margin-block-end:40px}
+/* 2. the guardian: the lit seal over the three devices it keeps */
+#turn{overflow:hidden;overflow:clip}   /* the glow of the seal may spread, never the page */
+.guard{display:grid;justify-items:center;gap:28px;margin-block-start:8px}
+.guard #seal{position:relative;display:grid;place-items:center}
+.guard #seal::before{content:"";position:absolute;inset:-70% -110%;z-index:0;background:radial-gradient(closest-side,rgba(214,175,92,.22),rgba(214,175,92,.06) 55%,transparent 78%);pointer-events:none}
+.guard .sx-seal{width:clamp(120px,16vw,168px);height:clamp(120px,16vw,168px);margin:0}
+.guard .fallback{width:140px;height:140px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 38% 30%,#24375e 0%,#0f1d36 62%,#08111f 100%);box-shadow:inset 0 0 0 2px rgba(201,168,76,.7),0 18px 40px rgba(0,0,0,.45)}
+.guard .fallback img{width:44%;height:44%}
+.devices{list-style:none;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;position:relative}
+.devices li{white-space:nowrap;display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:8px 18px;border-radius:999px;font-size:15px;color:#e4e9f1;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(232,210,155,.22)}
+.devices svg{width:18px;height:18px;flex:none;color:var(--champagne)}
+/* 3. Shield in three steps: what goes in, what the model sees, what is kept */
+.flow{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:f;text-align:start}
+.flow>li{counter-increment:f;display:flex;flex-direction:column;gap:6px;padding:28px 24px;border-radius:24px;background:var(--card);border:1px solid var(--hair);box-shadow:var(--lift)}
+.flow>li::before{content:counter(f,decimal-leading-zero);font-weight:300;font-size:15px;letter-spacing:.08em;font-variant-numeric:tabular-nums;color:var(--gold2)}
+.flow h3{font-size:20px;margin:0}
+.flow p{font-size:16px;line-height:1.55;color:var(--text)}
+.flow .term{margin-block-start:10px;font-size:13px;padding:16px 18px;border-radius:14px;overflow-wrap:normal}
+.figline{margin-block-start:32px;margin-inline:auto;max-width:min(100%,52ch);font-size:16.5px;color:var(--muted)}
+.figline b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+/* 4. four phones in a row (the kit's .phones holds three; here four stand level) */
+.tour-phones{gap:clamp(12px,2vw,28px)}
+.tour-phones figure .sx-phone,.tour-phones figure:nth-child(n) .sx-phone{width:clamp(180px,19vw,236px);transform:none}
+.tour-phones figure:nth-child(2) .sx-phone,.tour-phones figure:nth-child(3) .sx-phone{transform:translateY(-18px)}
+.scene .act{margin-block-start:40px}
+/* 5. the leader: one line and one screen */
+.leader{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(32px,6vw,88px);align-items:center;text-align:start}
+.leader h2{margin-inline:0}
+.leader .act{justify-content:flex-start;margin-block-start:0}
+.leader .sub{margin-block-end:24px}
+.leader .sx-phone{width:clamp(220px,24vw,280px);justify-self:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),inset 0 0 0 2.5px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.25),0 24px 48px -24px rgba(20,24,40,.45)}
+/* 6. why trust it: four plain promises, then four counted facts */
+.trust-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 40px;max-width:880px;margin-inline:auto;text-align:start}
+.trust-grid li{font-size:17px}
+.facts{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);margin-block-start:56px;border-block-start:1px solid var(--line);text-align:start}
+.facts li{padding:28px 24px 0;border-inline-start:1px solid var(--line)}
+.facts li:first-child{border:0;padding-inline-start:0}
+.facts b{display:block;font-weight:300;font-size:clamp(36px,3.8vw,52px);line-height:1;letter-spacing:-.03em;color:var(--gold2);font-variant-numeric:tabular-nums lining-nums;white-space:nowrap;margin-block-end:10px}
+.facts span{display:block;font-size:15px;line-height:1.5;color:var(--muted);max-width:20em}
+@media (max-width:960px){
+  .flow{grid-template-columns:1fr;max-width:560px;margin-inline:auto}
+  .leader{grid-template-columns:1fr;text-align:center}
+  .leader h2,.leader .sub{margin-inline:auto}
+  .leader .act{justify-content:center}
+  .facts{grid-template-columns:1fr 1fr;gap:28px 0}
+  .facts li:nth-child(3){border:0;padding-inline-start:0}
+}
+@media (max-width:600px){
+  section.scene{padding-block:64px}
+  .scene .sub{margin-block-end:28px}
+  .flow{gap:12px}
+  .flow>li{padding:18px 18px 20px;border-radius:20px}
+  .flow p{font-size:15.5px}
+  .flow .term{margin-block-start:6px;padding:12px 14px}
+  .figline{margin-block-start:24px}
+  .devices{gap:8px}
+  .tour-phones figure .sx-phone,.tour-phones figure:nth-child(n) .sx-phone{width:220px;transform:none}
+  .leader .sx-phone{width:220px}
+  .trust-grid{grid-template-columns:1fr;gap:12px}
+  .facts{margin-block-start:40px}
+  .facts li{padding:24px 16px 0}
+  .devices li{font-size:14px;padding:8px 12px;gap:6px}
+  .devices svg{width:16px;height:16px}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#top">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="SecuRAX home"><img src="../favicon.svg" alt="" width="30" height="30"><span>SecuRAX <small>by {{BRAND_NAME}}</small></span></a>
+    <ul>
+      <li><a href="#company">For a company</a></li>
+      <li><a href="#person">For a person</a></li>
+      <li><a href="#trust">Why trust it</a></li>
+      <li><a href="../docs/">Docs</a></li>
+    </ul>
+    <details class="menu"><summary aria-label="Menu">Menu</summary><ul>
+      <li><a href="#company">For a company</a></li>
+      <li><a href="#person">For a person</a></li>
+      <li><a href="#leader">For a leader</a></li>
+      <li><a href="#trust">Why trust it</a></li>
+      <li><a href="../docs/">Docs</a></li>
+      <li><a href="../">All of SecuRAX</a></li>
+    </ul></details>
+    <a class="btn btn-ghost" href="../docs/get-started/quickstart/">Get started free</a>
+  </div>
+</header>
+
+<main id="top">
+<!-- 1. The hook: the problem in one human line, on the living night sky -->
+<section class="hero sx-sky" id="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">The SecuRAX tour · two minutes</span>
+      <h1>Your people use AI. Your data walks out with it.</h1>
+      <p class="lead">And your own life is spread over ten apps and forty papers. There is a calmer way. Here it is, in six short scenes.</p>
+      <div class="act">
+        <a class="btn btn-gold sx-gold" href="../assess/">Check your AI risk</a>
+        <a class="quiet" href="#turn">Start the tour</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. The turn: a guardian on your side; the seal, lit, over the devices it keeps -->
+<section class="stage scene" id="turn">
+  <div class="wrap center">
+    <span class="kicker reveal">The turn</span>
+    <h2 class="reveal">A guardian that sits on your side.</h2>
+    <p class="sub reveal">SecuRAX runs on devices you own. It reads what goes out, keeps what is private at home, and answers to one person: you.</p>
+    <div class="guard reveal">
+      <div id="seal" aria-hidden="true"><div class="fallback"><img src="../favicon.svg" alt="" width="64" height="64"></div></div>
+      <ul class="devices" aria-label="Where it runs: your own laptop, phone and server">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/></svg>Laptop</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg>Phone</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="16" height="6.5" rx="1.5"/><path d="M8 7.25h.01M8 16.75h.01"/></svg>Server</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 3. For a company: Shield in three steps, on a masked example (never real data) -->
+<section class="scene" id="company">
+  <div class="wrap center">
+    <span class="kicker reveal">For a company · SecuRAX Shield</span>
+    <h2 class="reveal">Let your people use AI. Keep your data out of it.</h2>
+    <p class="sub reveal">Shield stands between your people and every AI model.</p>
+    <ol class="flow reveal">
+      <li><h3>A prompt goes in</h3><p>Someone in a hurry pastes a customer's details.</p>
+        <div class="term"><div class="in">› Reply to customer XXXX. PAN XXXXXXXXXX, card XXXX XXXX XXXX XXXX.</div></div></li>
+      <li><h3>Private data is stripped</h3><p>The model sees only placeholders. An attack is refused before any model sees it.</p>
+        <div class="term"><div class="ok">✔ PAN <span style="white-space:nowrap">[INCOME_TAX_PAN_REDACTED]</span></div><div class="bad">✖ "Ignore your rules" refused</div></div></li>
+      <li><h3>The evidence is kept</h3><p>Every block and every redaction goes into a tamper-evident log your auditor can read.</p></li>
+    </ol>
+    <p class="figline reveal"><b><!-- fact:attacks -->11 of 11<!-- /fact --></b> attacks in our red-team suite blocked, each refused in under <b><!-- fact:refuse_ms -->50<!-- /fact --> ms</b>, 95 times in 100.</p>
+  </div>
+</section>
+
+<!-- 4. For a person: the Life OS, shown, not listed (real screens on example data) -->
+<section class="stage scene" id="person">
+  <div class="wrap center">
+    <span class="kicker reveal">For a person · the Life OS</span>
+    <h2 class="reveal">Your whole life, calm on one screen.</h2>
+    <p class="sub reveal">Money, health, family and goals, locked by your face. Every red number comes with the fixes that work best for you.</p>
+    <div class="phones tour-phones reveal">
+      <figure><div class="sx-phone"><img src="../img/life-lock.webp" alt="The Life OS locked: the lit seal over a night sea, opened with a fingerprint or face" width="390" height="844" loading="lazy"></div><figcaption>Locked, over a night sea</figcaption></figure>
+      <figure><div class="sx-phone"><img src="../img/life-today.webp" alt="The Today screen: the day's rings and three small things, Move, Mind and Family" width="390" height="844" loading="lazy"></div><figcaption>Today: three small things</figcaption></figure>
+      <figure><div class="sx-phone"><img src="../img/life-money.webp" alt="What you really spend, and 4.7 months of cover shown as water in a glass" width="390" height="844" loading="lazy"></div><figcaption>Money you can see</figcaption></figure>
+      <figure><div class="sx-phone"><img src="../img/life-fix.webp" alt="Money health: life cover is short, and How to fix it names the best step, its cost and one button" width="390" height="844" loading="lazy"></div><figcaption>Every issue has a fix</figcaption></figure>
+    </div>
+    <div class="act"><a class="quiet" href="../app/">Try it on example data</a></div>
+  </div>
+</section>
+
+<!-- 5. For a leader: Vantage in one line and one screen -->
+<section class="alt scene" id="leader">
+  <div class="wrap leader">
+    <div>
+      <span class="kicker reveal">For a leader · Vantage</span>
+      <h2 class="reveal">One next step, not a dashboard to decode.</h2>
+      <p class="sub reveal">Vantage runs a security leader's week on phone and laptop: the review that is due, the risks, the rituals and the board report.</p>
+      <div class="act reveal"><a class="quiet" href="../vantage/">Open Vantage</a></div>
+    </div>
+    <div class="sx-phone reveal"><img src="../img/vantage-today.webp" alt="Vantage on a phone: your next step, the Monday risk review, with one gold button, Do it now" width="390" height="844" loading="lazy"></div>
+  </div>
+</section>
+
+<!-- 6. Why trust it: the promises in plain words, then four counted facts -->
+<section class="scene" id="trust">
+  <div class="wrap center">
+    <span class="kicker reveal">Why trust it</span>
+    <h2 class="reveal">Code decides. AI only proposes.</h2>
+    <ul class="tick-list trust-grid reveal">
+      <li>It runs on your own machines, and works offline.</li>
+      <li>It keeps working if our servers vanish.</li>
+      <li>No AI says yes or no to your data; plain code does.</li>
+      <li>Every line is readable: FSL-1.1-MIT, MIT after two years.</li>
+    </ul>
+    <ul class="facts reveal" aria-label="Proof, counted from the code">
+      <li><b><!-- fact:tests -->1650+<!-- /fact --></b><span>automated tests on every change</span></li>
+      <li><b><!-- fact:journeys -->50<!-- /fact --></b><span>journeys run the real product in CI</span></li>
+      <li><b><!-- fact:attacks -->11 of 11<!-- /fact --></b><span>red-team attacks blocked</span></li>
+      <li><b><!-- fact:frameworks -->9<!-- /fact --></b><span>frameworks mapped to evidence</span></li>
+    </ul>
+    <p class="quietline reveal">Counted from the code on every release. Mappings with evidence, not certifications: <a href="../docs/securax/55-ENGINEERING-STANDARD/">what we do not claim</a>.</p>
+  </div>
+</section>
+
+<!-- 7. One next step -->
+<section class="closing">
+  <div class="wrap">
+    <h2>See where your AI risk sits.</h2>
+    <p>Two minutes, a few taps, no sign-up. For yourself, the Life OS is free and works as a guest.</p>
+    <div class="act">
+      <a class="btn btn-gold sx-gold" href="../assess/">Check your AI risk</a>
+      <a class="quiet" href="../docs/">Read the docs</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div><h4>SecuRAX by {{BRAND_NAME}}</h4><p>A guardian on your side, on hardware you own. The code is public and free to use: FSL-1.1-MIT, each release MIT after two years. <a href="https://github.com/{{REPO_SLUG}}">Read it on GitHub</a>.</p></div>
+      <div><h4>Products</h4><ul><li><a href="../">SecuRAX Shield</a></li><li><a href="../personal/">SecuRAX Personal</a></li><li><a href="../nbfc/">Readiness for NBFCs</a></li></ul></div>
+      <div><h4>Learn</h4><ul><li><a href="../docs/">Documentation</a></li><li><a href="../docs/get-started/quickstart/">Quickstart</a></li><li><a href="../assess/">AI-risk check</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="mailto:{{CONTACT_EMAIL}}">Contact</a></li><li><a href="../docs/securax/55-ENGINEERING-STANDARD/">What we do not claim</a></li></ul></div>
+    </div>
+    <div class="fine"><span>© 2026 {{BRAND_NAME}}. SecuRAX: source available, free to use (FSL-1.1-MIT).</span><span>Made in India.</span></div>
+  </div>
+</footer>
+<script src="../site.js" defer></script>
+</body>
+</html>

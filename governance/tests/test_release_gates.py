@@ -109,12 +109,22 @@ def test_the_release_workflow_asks_the_gate_and_stays_signed(rg, monkeypatch):
         assert not ok and "release.yml lost" in detail, lost
 
 
+def test_every_bundled_part_ships_with_its_licence_in_the_real_repo(rg):
+    ok, detail = rg.third_party_notices({})
+    assert ok, detail                                                    # the real repository
+
+
 def test_a_third_party_step_on_a_movable_tag_is_found_and_githubs_own_are_not(rg, monkeypatch):
     flow = ("permissions:\n  contents: read\njobs:\n  a:\n    steps:\n      - uses: actions/checkout@v7\n      - uses: github/codeql-action/upload-sarif@v4\n"
             "      - uses: someone/build-thing@v3\n      - uses: other/scan@" + "ab12" * 10 + "   # v2.1.0\n      - uses: ./.github/workflows/release.yml\n")
     monkeypatch.setattr(rg, "workflows", lambda: {"ci.yml": flow})
     assert rg.unpinned_actions() == ["ci.yml: someone/build-thing@v3"]
     assert rg.actions_pinned({})[0] is False
+
+
+def test_every_action_in_the_real_workflows_is_pinned_to_a_commit(rg):
+    ok, detail = rg.actions_pinned({})
+    assert ok, detail                                                    # the real workflows
 
 
 def test_a_workflow_that_hands_a_stranger_write_access_or_a_shell_is_caught(rg):

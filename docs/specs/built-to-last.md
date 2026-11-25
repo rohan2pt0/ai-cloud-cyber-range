@@ -127,7 +127,7 @@ human text, where a literal is allowed. `LICENSE` names the licensor and is chan
 Dockerfiles under `apps/`, `gitops/bootstrap/{core,platform,tenants}.yaml`, `gitops/root-app.yaml`,
 `gitops/charts/tenant/values.yaml`, `gitops/platform/{metering,policies}.yaml`, `governance/queue.json`,
 `guiding-map/features.js`, two Terraform files under `infra/terraform/`, `lifecycle/burrow.py`,
-`local/scripts/wsl-setup.sh`, `mkdocs.yml`, one notebook, `portal/explainer.html`, `tools/publish-clean.sh`,
+`local/scripts/wsl-setup.sh`, `mkdocs.yml`, one notebook, `website/explainer/index.html`, `tools/publish-clean.sh`,
 `website/index.html`, `website/personal/index.html`. The hosted origin itself carries the owner's account name; that
 ends with queue item `own-origin-hosting`.
 

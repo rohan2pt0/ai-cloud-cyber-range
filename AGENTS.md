@@ -42,6 +42,10 @@ The principles behind it:
   3. **Every day:** progress they can see; end each visit on a small win; recall a slip once and kindly, then help.
   4. **Never against them:** invite, never command (pressure makes people resist: "Mandatory" loses, "the floor is enough" wins);
      give them the choice and the off switch; no guilt, no fake urgency, no hidden costs, no dark patterns.
+- **Plain words first, depth on request (`plain-first`, owner 2026-11-25):** what a person sees by default is everyday language, one number in rupees, time or a count they feel, and one fix; ratios, formulas, sources and theory sit one tap away under How we worked this out (or the glossary); never jargon or a bare ratio on the default view. `guiding-map/tests/test176.js` holds the count of jargon terms per tab and it only goes down.
+- **Every issue has a path (`every-issue-has-a-path`, owner 2026-11-25):** every issue, KPI or KRI the estate flags shows its 2-3 most
+  effective fixes, computed by code from the person's own numbers, ranked by impact ÷ effort, with conditions, sources and one action;
+  never a red number alone. One engine: `REMEDIES` and `gmRemedies(issueId, ctx)` in `guiding-map/ops.js` (pure; no AI). `test172.js` holds it.
 - **See the whole (`whole-view`):** think like the great generalists. Before you build, run the **360 review** on the change and
   write the answers in the PR:
   1. **Person:** who uses this, in what moment and mood, and what do they feel at each step? (`human-first`)
@@ -113,6 +117,14 @@ The principles behind it:
   action always on screen. Prove it with `python3 guiding-map/tests/device_audit.py OUTDIR` (9 device profiles x every key
   view) and look at the screenshots, not only the score.
 - **Immersive and real (`immersive-real`, owner 2026-11-22):** make every surface feel like a living world true to life, the craft the best open-world game studios use: the person's own data is the world; actions have visible consequences across screens; time passes (bills fall due, leases end, seasons turn); drills and scenarios play out with real stakes, timing and an after-action review. Realism means faithful to the real rules and thresholds, never invented drama. Calm by default, reduced motion respected, nothing addictive, no fake urgency, and no copying of any game's names, art or story.
+- **Trust is the product, sovereign by design (`trust-is-the-product`, owner 2026-11-24):** people want a personal AI that runs their life, but trust,
+  not intelligence, is the ceiling. 80% boring, auditable code and 20% AI: code decides, AI only proposes, no AI in the authorisation path.
+  Every AI output passes the rejection pipeline (schema, types, policy, idempotency, audit) before it touches the person's data; count the
+  rejections. Oversight is risk-adaptive: reversible and low-stakes runs with an undo; irreversible, external or sensitive asks first;
+  ambiguous does nothing and asks with a default. Memory is the person's: local-first, partitioned, read only through a scoped, expiring
+  consent token, fully exportable. Every feature passes the **continuity test**: it works if our servers vanish, everything can be taken away,
+  every part (model, cloud, device) can be replaced, and its privacy fits in one breath. Models are swappable; the orchestration, consent and
+  evaluation layer is the asset. Build first for the privacy-literate person who will check these promises. Queue `deterministic-backbone`.
 - **Signature features, perfected (`signature-perfect`, owner 2026-11-14):** the distinctive features (the three rings, the
   night-sky lock, the seal, the lit materials, the keycaps, and each new one) are what people remember and come back for, so
   each is perfected in every aspect, not just made to work: meaning at a glance and one tap that explains it; a material true
@@ -214,7 +226,7 @@ Before merging anything the router calls strong, get a second look: `./securax r
 2. A PWA change: `node build.js`, then `npm test` in `guiding-map/`, then `python3 guiding-map/tests/ui_audit.py OUTDIR`. It must report 0 page errors and 0 contrast failures, in both themes.
 3. `git add -A`, **then** `python3 -m lifecycle.fitness`: untracked files are invisible to the impact-map check.
 4. The paperwork that rides with every change:
-   - **CHANGELOG:** a line under `[Unreleased]`.
+   - **CHANGELOG:** a line under `[Unreleased]`. A change may add `changes/<branch>.md` (one line, no bullet) instead of editing `CHANGELOG.md`; `python3 tools/changelog_fold.py` folds it in.
    - **Status lights:** edit `docs/status.yml`, then run `python3 docs/sync_status.py`.
    - **Docs nav:** a new doc goes in `mkdocs.yml` nav.
    - **README:** `python3 tools/readme_sync.py`.

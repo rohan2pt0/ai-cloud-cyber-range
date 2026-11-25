@@ -71,3 +71,10 @@ def test_the_report_and_the_phone_message_always_name_one_next_step(tmp_path, mo
     assert msg.startswith(("Your estate had your back", "Your week with SecuRAX")) and len(msg) < 400
     if p["next"]:
         assert f"./securax finish {p['next']['id']}" in msg
+
+
+def test_the_ai_proposal_line_shows_the_rejection_rate_and_the_model_share():
+    st = {"proposals": 40, "rejection_rate": 0.125, "asked": 3, "executed": 32, "model_share": 0.05}
+    line = pg.actions_line(lambda: st)
+    assert line.startswith("AI proposals checked by code: 40, 12% rejected") and "5% came from a model" in line
+    assert pg.actions_line(lambda: {"proposals": 0}) is None and pg.actions_line(lambda: None) is None

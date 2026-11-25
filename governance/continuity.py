@@ -9,6 +9,7 @@
                                          (--answers=yyn... for scripts)
     ./securax continuity mirror          copy the code off GitHub: a git bundle in the backup folders, and a push to MIRROR_REMOTES
     ./securax continuity mirror setup    a second git host (a private GitLab project) in three steps, with its own write-only-there key
+                                         (the always-on path is the CI mirror, .github/workflows/mirror.yml, doc 131; this laptop one is the fallback)
     ./securax continuity --json          the same as the first, for the cockpit
 
 The scenarios live in governance/continuity.json. RPO (how much may be lost) is measured from the newest backup, off-site copy or

@@ -20,8 +20,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/ruff-action@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6  # v3
         with: { version: "0.16.8" }
       - name: Ruff lint (config in pyproject.toml)
         run: ruff check .
@@ -29,8 +29,8 @@ jobs:
   app-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with: { python-version: "3.12" }
       - name: Install gateway + test deps
         run: pip install -r apps/llm-gateway/requirements-dev.txt pyyaml
@@ -44,7 +44,7 @@ jobs:
         run: python redteam/aispm_scan.py --root . --out docs/aispm-report.json
       - name: Board risk brief
         run: python redteam/board_report.py --redteam redteam/results.json --aispm docs/aispm-report.json --out docs/board-brief.md
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with:
           name: ai-assurance-reports
           path: |
@@ -60,8 +60,8 @@ jobs:
     # (PII/secret gating of these files runs in the python `app-tests` job.)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
         with: { node-version: "22" }
       - name: Install jsdom
         working-directory: guiding-map
@@ -79,19 +79,19 @@ jobs:
   sast-and-secrets:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with: { fetch-depth: 0 }
       - name: Gitleaks (secret scanning)
-        uses: gitleaks/gitleaks-action@v3
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e  # v3
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
       - name: Semgrep (SAST, OWASP + security-audit rulesets)
-        uses: semgrep/semgrep-action@v1
+        uses: semgrep/semgrep-action@713efdd345f3035192eaa63f56867b88e63e4e5d  # v1
         with: { config: "p/security-audit p/python p/dockerfile p/owasp-top-ten" }
 
   iac-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - name: Compose config validation (catches deploy-blocking errors before anyone runs it)
         working-directory: local/compose
         run: |
@@ -106,20 +106,24 @@ jobs:
           output: trivy-config.sarif
           trivy-config: trivy.yaml            # path-scoped, reasoned exceptions in .trivyignore.yaml
           exit-code: "0"
-      - uses: github/codeql-action/upload-sarif@v4
+      - uses: github/codeql-action/upload-sarif@915412ff23e8b7659517e607487dbeae018f2934  # v4
         if: always()
         with: { sarif_file: trivy-config.sarif }
       - name: Conftest (OPA policy gate on Terraform)
         run: |
-          curl -fsSL https://github.com/open-policy-agent/conftest/releases/download/v0.56.0/conftest_0.56.0_Linux_x86_64.tar.gz | tar xz conftest
-          sudo mv conftest /usr/local/bin/
+          # download to a file, verify against the pinned sha256 (from the release's checksums.txt) (retried: a 504 must not turn CI red), then
+          # unpack outside the checkout: a pipe would skip the verification (the helm install in lifecycle.yml does the same)
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o "$RUNNER_TEMP/conftest_0.56.0_Linux_x86_64.tar.gz" https://github.com/open-policy-agent/conftest/releases/download/v0.56.0/conftest_0.56.0_Linux_x86_64.tar.gz
+          echo "620f41640d63bbde1646a108ce2816ba54c980466ceebb7e754dda2d508e8cd5  $RUNNER_TEMP/conftest_0.56.0_Linux_x86_64.tar.gz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/conftest_0.56.0_Linux_x86_64.tar.gz" -C "$RUNNER_TEMP"
+          sudo mv "$RUNNER_TEMP/conftest" /usr/local/bin/
           # A full plan needs cloud creds; here we lint the HCL and run policy unit smoke.
           conftest verify --policy policies/opa || true
 
   container-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - name: Build gateway image
         run: docker build -t vulnbank/llm-gateway:ci apps/llm-gateway
       - name: Build estate-sync image (sovereign cross-device state store)
@@ -132,14 +136,14 @@ jobs:
           output: trivy-image.sarif
           severity: CRITICAL,HIGH
           exit-code: "0"
-      - uses: github/codeql-action/upload-sarif@v4
+      - uses: github/codeql-action/upload-sarif@915412ff23e8b7659517e607487dbeae018f2934  # v4
         if: always()
         with: { sarif_file: trivy-image.sarif }
       - name: Generate SBOM (CycloneDX)
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0
         with:
           image: vulnbank/llm-gateway:ci
           format: cyclonedx-json
           output-file: sbom.cdx.json
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with: { name: sbom, path: sbom.cdx.json }

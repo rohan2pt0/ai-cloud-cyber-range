@@ -768,14 +768,18 @@
           : '<button class="btn btn-p" data-sync-share onclick="gmSyncShare()">Add another device</button>'
             + '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:6px 0 10px">Sends a link to your own phone, iPad or laptop (AirDrop, Nearby Share or a note to yourself). Opening it there turns sync on: nothing to type. It holds your sync key, so send it to no one else.</div>')
         + '<button class="btn btn-s" onclick="gmSyncOff()">Turn sync off</button>';
-    } else {
-      h += '<div class="info">Your devices stay in step through <b>your own SecuRAX estate</b>, not a cloud service. '
+    } else if (estateUp) {
+      // only where this page's own address answered as a SecuRAX estate (gmEstateProbe): the address is then real, never invented
+      h += moveHTML() + '<div class="info">This page comes from <b>your own SecuRAX estate</b>, so your devices can also stay in step through it, not a cloud service. '
         + 'To add this device: on a device that already syncs, open this card and tap <b>Add another device</b>. Nothing to type here.</div>'
-        + '<details class="gm-sync-hand" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Set it up by hand</summary>'
-        + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + (TS_ORIGIN || SECURE_ORIGIN ? location.origin + "/sync" : "") + '" placeholder="' + (SECURE_ORIGIN ? location.origin + "/sync" : "http://securax.your-tailnet.ts.net:8089/sync") + '">'
+        + '<details class="gm-sync-hand" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Set it up by hand (for the estate\u2019s engineer)</summary>'
+        + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + esc(location.origin + "/sync") + '">'
         + '<label class="f-label">Device token</label><input id="syKey" placeholder="your estate sync token">'
         + '<label class="f-label">Your row id (anything, same on every device)</label><input id="syUser" placeholder="me">'
         + '<button class="btn btn-s" onclick="gmSyncSave()">Turn sync on</button></details>';
+    } else {
+      // no estate answers here (a Pages copy, a file, a laptop that is off): the move works anyway, and no form asks for an address
+      h += moveHTML();
     }
     return h;
   }
@@ -1603,7 +1607,7 @@
     var out = [], all = props(), L = loansLeft();
     all.forEach(function (p, i) {
       if (!p || p.use === "rented") return;
-      var nm = esc(p.n || "Property " + (i + 1));
+      var nm = esc(gmTidyName(p.n) || "Property " + (i + 1));
       if (/^example/i.test(String(p.n || ""))) { out.push({ w: 100, t: "<b>" + nm + "</b> is still the worked example, and its numbers count as yours.", b: [["Remove it", "gmPropDel(" + i + ")"]] }); return; }
       if (!num(p.val)) out.push({ w: 90, t: "Is <b>" + nm + "</b> yours? It has no value, so net worth cannot count it. If you rent it, say so and it is left out.",
         b: [["We rent it", "gmPropSet(" + i + ",'use','rented')"], ["Type its value", "goTab('prop')"]] });
@@ -1809,14 +1813,24 @@
   var WIND_K = "gm_wind";
   window.gmWind = function () { var w = G(WIND_K, null); return w && typeof w === "object" && w.ok && isFinite(+w.speed) ? w : null; };
   if (window.SXWorld) SXWorld.windSource = window.gmWind;   // the shared cloth flies in the person's own wind
+  // The live sky (shared/sky.js) reads the same consented reading: its clouds and weather, and the rounded place (0.1 deg).
+  // Without consent there is no reading and no place; the sky then uses the time zone's city and draws a clear sky.
+  if (window.SXSky) {
+    SXSky.weatherSource = function () { var w = window.gmWind ? gmWind() : null; return w && isFinite(+w.cloud) ? { cloud: +w.cloud, code: +w.code || 0, isDay: w.isDay, at: w.at, speed: +w.speed, dir: +w.dir } : null; };
+    SXSky.placeSource = function () { var w = G(WIND_K, null); return w && w.ok && isFinite(+w.lat) && isFinite(+w.lon) ? { lat: +w.lat, lon: +w.lon } : null; };
+    SXSky.t = function (s) { return window.gmT ? gmT(s) : s; };
+  }
   window.gmWindFetch = function (force) {
     var w = G(WIND_K, null); if (!w || !w.ok || !navigator.onLine || !window.fetch) return;
-    if (!force && w.at && Date.now() - w.at < 3 * 3600e3) return;
+    if (!force && w.at && Date.now() - w.at < 3600e3) return;   // hourly: the clouds change faster than the wind
     var go = function (lat, lon) {
-      fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current=wind_speed_10m,wind_direction_10m", { credentials: "omit", referrerPolicy: "no-referrer" })
+      fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current=wind_speed_10m,wind_direction_10m,cloud_cover,weather_code,is_day", { credentials: "omit", referrerPolicy: "no-referrer" })
         .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
           var c = j && j.current; if (!c || !isFinite(+c.wind_speed_10m)) return;
-          var v = G(WIND_K, {}) || {}; v.speed = Math.max(0, Math.min(150, +c.wind_speed_10m)); v.dir = ((+c.wind_direction_10m % 360) + 360) % 360; v.at = Date.now(); S_(WIND_K, v); renderAll();
+          var v = G(WIND_K, {}) || {}; v.speed = Math.max(0, Math.min(150, +c.wind_speed_10m)); v.dir = ((+c.wind_direction_10m % 360) + 360) % 360;
+          // the same reading carries the sky's weather (live sky, shared/sky.js): cloud cover, the WMO weather code, day or night
+          if (isFinite(+c.cloud_cover)) v.cloud = Math.max(0, Math.min(100, +c.cloud_cover)); if (isFinite(+c.weather_code)) v.code = +c.weather_code | 0; if (c.is_day !== undefined) v.isDay = +c.is_day ? 1 : 0;
+          v.at = Date.now(); S_(WIND_K, v); renderAll();
         }).catch(function () {});
     };
     if (isFinite(+w.lat) && isFinite(+w.lon)) return go(w.lat, w.lon);
@@ -2222,8 +2236,21 @@
 
   function props() { return G("gm_props", []); }
   // A living sky (immersive-real): the header follows the real time of day, set on load and whenever the app comes back.
-  function gmDaypart() { var h = new Date().getHours(); document.documentElement.setAttribute("data-daypart", h >= 5 && h < 8 ? "dawn" : h >= 8 && h < 17 ? "day" : h >= 17 && h < 20 ? "dusk" : "night"); }
+  // From the real sun when the shared sky can work it out (dawn and dusk are the sun within 12 deg below to 6 deg above), else the clock.
+  function gmDaypart() { var h = new Date().getHours(), p = null; try { p = window.SXSky && SXSky.daypart ? SXSky.daypart() : null; } catch (e) {}
+    document.documentElement.setAttribute("data-daypart", p || (h >= 5 && h < 8 ? "dawn" : h >= 8 && h < 17 ? "day" : h >= 17 && h < 20 ? "dusk" : "night")); }
   try { gmDaypart(); document.addEventListener("visibilitychange", function () { if (!document.hidden) gmDaypart(); }); } catch (e) {}
+  // The live sky's surfaces in the Life OS (shared/sky.js): the greeting becomes a window on the sky, words in white on it in both
+  // themes (the sky holds its brightness under the white text, so AA holds); the goal mountain stands in front of the real sky
+  // (its own painted sky gives way); the materials that are not a sky (cognac, marble, carbon) keep their look.
+  try { var sxs = document.createElement("style"); sxs.id = "gmLiveSky";
+    sxs.textContent = "html body .gm-greet[data-sx-sky]{padding:16px;padding-inline-end:52px;border-radius:18px;background-color:#0d1a30;overflow:hidden;box-shadow:0 10px 26px rgba(4,10,24,.22)}"
+      + "html body .gm-greet[data-sx-sky]{--ring-track:rgba(255,255,255,.1)}html body .gm-greet[data-sx-sky] .gm-rings text{fill:#fff}html body .gm-greet[data-sx-sky] h2{color:#fff!important}html body .gm-greet[data-sx-sky] p{color:#f1f4f8!important;opacity:1!important}"
+      + "html body .gm-greet[data-sx-sky] :is(h2,p),.gm-hero.sx-live :is(.gm-hero-m,.gm-hero-u){text-shadow:0 1px 2px rgba(0,0,0,.4)}.gm-hero.sx-live :is(.gm-hero-m,.gm-hero-u){color:#f3f6fa}"
+      + ".gm-mtn-sky{width:100%;max-width:420px;box-sizing:border-box;margin:6px 0 4px;border-radius:12px;overflow:hidden;background:#1c3a63}.gm-mtn-sky>svg.gm-mtn{margin:0!important;border-radius:0!important}"
+      + ".gm-mtn-sky.sx-live>svg.gm-mtn>rect:first-of-type{opacity:0}"
+      + "html[data-mat=cognac] .sx-live-cv,html[data-mat=marble] .sx-live-cv,html[data-mat=carbon] .sx-live-cv{display:none}";
+    document.head.appendChild(sxs); } catch (e) {}
   // A typed 0 is a real answer: show it, never the "e.g." hint again (owner 2026-11-20: a 0 looked unsaved)
   function keep0(x) { return x === undefined || x === null ? "" : x; }
   // A home the family rents is not theirs (owner 2026-11-20: the rented flat was entered as owned). It stays listed, so the
@@ -2243,6 +2270,7 @@
     rent: { min: 0, max: 10000000 }, emi: { min: 0, max: 10000000 }, out: { min: 0, max: 100000000 },
     rate: { min: 0, max: 30 }, vac: { min: 0, max: 12, int: true },
     rentDay: { min: 1, max: 28, int: true }, maintDay: { min: 1, max: 28, int: true }, months: { min: 1, max: 60, int: true },
+    fee: { min: 0, max: 1000000 }, escal: { min: 0, max: 30 }, prepay: { min: 0, max: 1000000000 }, altYield: { min: 0, max: 20 },
     share: { min: 1, max: 99, int: true }, deposit: { min: 0, max: 100000000 }, maint: { min: 0, max: 10000000 }, start: { date: true }, taxDue: { date: true }
   };
   window.gmPropCalc = function (p) { return propCalc(p); };
@@ -2254,7 +2282,7 @@
       loan = num(p.loan) * 100000,
       rate = num(p.rate) / 100,
       emi = num(p.emi),
-      emiFrom = "",
+      emiFrom = "", loanRate = 0, loanTenure = 0,
       out = num(p.out),                      // \u20b9/yr: society + property tax + repairs
       vacM = Math.min(12, Math.max(0, num(p.vac)));  // clamp: 13 made annual rent negative
     // The home loan is entered once, under Loans (owner 2026-11-23): a let-out flat with no EMI of its own takes it when the loan
@@ -2262,9 +2290,9 @@
     if (!emi && (p.use || "letout") === "letout") {
       var owned = ownedProps().filter(function (q) { return q && (q.use || "letout") === "letout" && num(q.val); });
       if (num(p.loan) > 0 || (owned.length === 1 && num(p.val) > 0)) {
-        var le = 0, lr = 0;
-        (window.P && P.loans || []).forEach(function (x) { if (x && /home/i.test(String(x.type || ""))) { le += Math.max(0, num(x.emi)); lr += Math.max(0, num(x.remaining)); } });
-        if (le > 0) { emi = le; emiFrom = "loans"; if (!loan && lr > 0) loan = lr; }
+        var le = 0, lr = 0, lrate = 0, lten = 0;
+        (window.P && P.loans || []).forEach(function (x) { if (x && /home/i.test(String(x.type || ""))) { le += Math.max(0, num(x.emi)); lr += Math.max(0, num(x.remaining)); if (!lrate && num(x.rate) > 0) lrate = num(x.rate); if (!lten && num(x.tenure) > 0) lten = num(x.tenure); } });
+        if (le > 0) { emi = le; emiFrom = "loans"; if (!loan && lr > 0) loan = lr; loanRate = lrate; loanTenure = lten; }
       }
     }
     var grossAnnual = rent * 12;
@@ -2282,7 +2310,9 @@
       beOcc: rent ? (emi * 12 + out) / (rent * 12) * 100 : 0,
       cashflow: rent - emi - out / 12,
       interest: interest,
-      equity: val - loan
+      equity: val - loan,
+      // the inputs as used, for the fixes engine (every-issue-has-a-path): never re-derived elsewhere
+      loanAmt: loan, emiAmt: emi, ratePct: num(p.rate) || loanRate, tenureM: loanTenure, rentM: rent, vacM: vacM, outA: out, valAmt: val
     };
     // Tax: let-out. NAV = rent less municipal tax; 30% standard deduction; interest fully deductible.
     var muni = out * 0.25; // rough split of the outgo that is municipal tax
@@ -2299,23 +2329,918 @@
   function verdict(r, p) {
     var out = [];
     if (r.netYield && r.netYield < 2.5) out.push(["Yield is thin", "var(--red)",
-      "Net yield under 2.5% means the flat is a leveraged bet on price appreciation, not an income asset. That is a legitimate position \u2014 but hold it deliberately, not by accident."]);
+      "Net yield under 2.5% means the flat is a leveraged bet on price appreciation, not an income asset. That is a legitimate position \u2014 but hold it deliberately, not by accident.", "yield-thin"]);
     else if (r.netYield >= 3.5) out.push(["Yield is healthy for India", "var(--green)",
       "Indian residential net yields cluster around 2\u20133%. Above 3.5% is genuinely good."]);
     if (r.dscr && r.dscr < 1 && (r.emiFrom || num(p.emi))) out.push(["Rent does not cover the EMI", "var(--amber)",
-      "Every month you are topping up from salary. That is fine while the shortfall is small and the interest is tax-shielded \u2014 dangerous the moment income stops."]);
+      "Every month you are topping up from salary. That is fine while the shortfall is small and the interest is tax-shielded \u2014 dangerous the moment income stops.", "dscr-low"]);
     if (r.beOcc > 100) out.push(["Break-even occupancy above 100%", "var(--red)",
-      "Even fully let, the property does not pay for itself. Raise the rent to market, cut the outgo, or plan an exit."]);
+      "Even fully let, the property does not pay for itself. The fixes below are ranked by what they do for your own numbers.", "beocc-high"]);
     else if (r.beOcc > 85) out.push(["Break-even occupancy is tight", "var(--amber)",
-      "Two vacant months turn the year negative. Keep a dedicated buffer of two EMIs for this flat alone."]);
+      "Two vacant months turn the year negative. Keep a dedicated buffer of two EMIs for this flat alone.", "beocc-high"]);
     if (r.debtToRent > 12) out.push(["Debt is heavy against rent", "var(--amber)",
-      Math.round(r.debtToRent) + " years of gross rent would be needed to clear the loan. Above 12 is leverage doing the work, not the asset."]);
+      Math.round(r.debtToRent) + " years of gross rent would be needed to clear the loan. Above 12 is leverage doing the work, not the asset.", "debt-heavy"]);
     if (r.carryForward > 0) out.push(["Loss above the \u20b92L set-off cap", "var(--amber)",
-      "\u20b9" + Math.round(r.carryForward).toLocaleString("en-IN") + " cannot be set off against salary this year. It carries forward eight years and only ever offsets future house-property income."]);
+      "\u20b9" + Math.round(r.carryForward).toLocaleString("en-IN") + " cannot be set off against salary this year. It carries forward eight years and only ever offsets future house-property income.", "setoff-cap"]);
     if (!out.length) out.push(["Nothing structurally wrong", "var(--green)", "The numbers hold up. Re-benchmark the rent annually and leave it alone."]);
+    // An overdue paper is shown once, in "Next for this home" (plain-first-everywhere, owner 2026-11-25): never a second card.
     return out;
   }
 
+  /* ── Plain words first (principle plain-first, owner 2026-11-25) ─────────────────────────────────────────────────────
+     What the Property tab shows by default is a sentence a person can feel, built from their own numbers: rupees a month, a
+     share in words (half, a third, most), years of rent. The ratio, its technical name, its formula, its target and its source
+     sit one tap away under "How we worked this out". Pure functions: the same numbers always give the same words. */
+  function plRound(n) { n = Math.max(0, n); return n >= 1000 ? Math.round(n / 100) * 100 : Math.round(n / 10) * 10; }   // round to what people say: the nearest hundred (ten under a thousand)
+  function plShare(x) {            // how much of the EMI the rent pays, in words
+    return x < 0.15 ? "only a little of" : x < 0.3 ? "about a quarter of" : x < 0.45 ? "about a third of" : x < 0.62 ? "about half" : x < 0.8 ? "about two thirds of" : "most of";
+  }
+  function plQuarters(x) { return x < 40 ? "under half" : x < 60 ? "about half" : x < 85 ? "about three quarters" : "almost all"; }   // a loan share, in words
+  function plCost(r) { return Math.max(0, r.emiAmt + r.outA / 12 - r.rentM * (12 - r.vacM) / 12); }     // what the person adds each month: EMI and costs less the rent that really arrives
+  function plHead(id, r, c) {      // the one plain sentence for an issue
+    var rs = function (n) { return remRs(c, n); }, cost = plRound(plCost(r));
+    if (id === "dscr-low") return "Rent pays " + plShare(r.dscr) + " your EMI. You add " + rs(cost) + " a month.";
+    if (id === "beocc-high") return r.beOcc > 100 ? "Even rented all year, this flat costs you money." : "It has to be let about " + Math.max(1, Math.min(12, Math.round(r.beOcc * 12 / 100))) + " months a year just to pay for itself.";
+    if (id === "debt-heavy") return r.debtToRent > 12 || r.ltv <= 75 ? "At today's rent, the loan would take about " + Math.round(r.debtToRent) + " years of rent to clear." : "The loan is " + plQuarters(r.ltv) + " of what the flat is worth.";
+    if (id === "yield-thin") return "After costs, rent brings in only about " + rs(plRound((r.netYield / 100 * r.valAmt) / 12)) + " a month on a flat worth " + rs(r.valAmt) + ".";
+    if (id === "setoff-cap") return rs(plRound(r.carryForward)) + " of this flat's loss cannot lower this year's tax. It carries forward.";
+    if (id === "papers-open") return "A legal step for this home is still open. It takes one form.";
+    return "This flat costs you " + rs(cost) + " a month.";
+  }
+  // The technical side, kept whole under "How we worked this out": the name, the formula, the aim and where it comes from.
+  var PL_TECH = {
+    "dscr-low": { name: "Rent-to-EMI cover, also called DSCR (debt service cover ratio)", formula: "rent × (12 − vacant months) ÷ (EMI × 12)", aim: "Lenders like 1.2× or more. Below 1.0 you top it up from salary every month.",
+      source: "How lenders judge a rental-property loan (debt service cover); common property-finance rules of thumb.", rows: ["Rent-to-EMI cover", "Monthly cash flow"], val: function (r) { return r.dscr.toFixed(2) + "×"; } },
+    "beocc-high": { name: "Break-even occupancy", formula: "(EMI × 12 + yearly outgo) ÷ (rent × 12)", aim: "70% or less. Above 85% is fragile; above 100% the flat loses money even when let all year.",
+      source: "Property-finance rule of thumb: the share of the year the flat must be let to stand still.", rows: ["Break-even occupancy"], val: function (r) { return r.beOcc.toFixed(0) + "%"; } },
+    "debt-heavy": { name: "Debt to rent (debt-to-rental-income)", formula: "outstanding loan ÷ yearly rent", aim: "8 years or less. Above 12 is leverage doing the work, not the asset.",
+      source: "Property-finance rule of thumb on leverage against rent.", rows: ["Debt-to-rental-income", "Loan-to-value"], val: function (r) { return r.debtToRent.toFixed(1) + " yrs"; } },
+    "yield-thin": { name: "Net rental yield", formula: "(rent × (12 − vacant months) − yearly outgo) ÷ market value", aim: "3% or more. Indian residential net yields cluster around 2 to 3%.",
+      source: "Common property-finance rules of thumb for Indian residential rents.", rows: ["Net rental yield", "Gross rental yield", "Price-to-rent"], val: function (r) { return r.netYield.toFixed(2) + "%"; } }
+  };
+  function plTechHTML(id, r, x, esc2) {
+    var t = PL_TECH[id], h = '<div style="font-size:11.5px;line-height:1.55;color:var(--text)">';
+    if (t) h += '<div><b>' + esc2(t.name) + ':</b> ' + esc2(t.val(r)) + '</div><div>How it is worked out: ' + esc2(t.formula) + '</div><div>The aim: ' + esc2(t.aim) + '</div>';
+    if (x) h += '<div style="margin-top:4px"><b>' + esc2(x[0]) + '.</b> ' + x[2] + '</div>';
+    if (t) h += '<div style="margin-top:4px;color:var(--muted)">Source: ' + esc2(t.source) + '</div>';
+    return h + '</div>';
+  }
+
+  /* ── Every issue shows its fixes (principle every-issue-has-a-path, owner 2026-11-25) ──────────────────────────────────
+     REMEDIES maps each issue the estate flags to the fixes that can move it. A fix's impact(ctx) is a pure function of the
+     person's own numbers, by standard formulas: the amortisation EMI, rent-to-EMI cover (DSCR), break-even occupancy and debt
+     to rent in years. preconditions(ctx) says true, false or "unknown" (asked once, with a default the person can change); a
+     guard holds a fix back and says why under "What not to do". Code ranks them: hard risks first, then rupees a month per unit
+     of effort. No AI is called anywhere here: code decides, the person chooses. */
+  var REM_EFFORT = { "one call": 1, "one form": 2, "at renewal": 3, "a project": 8 };
+  function remEmi(L, ratePct, n) {            // EMI = L·i·(1+i)^n / ((1+i)^n − 1), with i the monthly rate
+    var i = ratePct / 1200; if (!(L > 0) || !(n > 0)) return 0; if (!(i > 0)) return L / n;
+    var f = Math.pow(1 + i, n); return L * i * f / (f - 1);
+  }
+  function remMonths(L, ratePct, E) {         // months left at EMI E: n = −ln(1 − i·L/E) / ln(1+i); Infinity when E does not cover the interest
+    var i = ratePct / 1200; if (!(L > 0)) return 0; if (!(E > 0)) return Infinity; if (!(i > 0)) return L / E;
+    return i * L >= E ? Infinity : -Math.log(1 - i * L / E) / Math.log(1 + i);
+  }
+  window.gmRemEmi = remEmi; window.gmRemMonths = remMonths;
+  function remMetrics(c, rent, emi, loan) {    // the same definitions as propCalc, so a before and an after never disagree
+    var eff = rent * (12 - c.vac);
+    return { dscr: emi > 0 ? eff / (emi * 12) : 0, beOcc: rent > 0 ? (emi * 12 + c.out) / (rent * 12) * 100 : 0,
+      debtToRent: rent > 0 ? loan / (rent * 12) : 0, netYield: c.val > 0 ? (eff - c.out) / c.val * 100 : 0 };
+  }
+  var REM_METRIC = {   // the number each issue is judged by, and how it reads
+    "dscr-low": ["Rent-to-EMI", "dscr", function (v) { return v.toFixed(2) + "×"; }],
+    "beocc-high": ["Break-even occupancy", "beOcc", function (v) { return Math.round(v) + "%"; }],
+    "debt-heavy": ["Debt to rent", "debtToRent", function (v) { return v.toFixed(1) + " yrs"; }],
+    "yield-thin": ["Net yield", "netYield", function (v) { return v.toFixed(2) + "%"; }]
+  };
+  function remMove(c, after) {
+    var m = REM_METRIC[c.issue]; if (!m) return {};
+    var b = remMetrics(c, c.rent, c.emi, c.loan)[m[1]], a = after[m[1]];
+    return { metric: m[0], metricBefore: m[2](b), metricAfter: m[2](a), before: b, after: a };
+  }
+  function remRs(c, n) {
+    try { return new Intl.NumberFormat(c.loc || "en-IN", { style: "currency", currency: c.cur || "INR", maximumFractionDigits: 0 }).format(Math.round(n)); }
+    catch (e) { return "₹" + Math.round(n).toLocaleString("en-IN"); }
+  }
+  function remMo(n) { n = Math.max(0, Math.round(n)); return n + (n === 1 ? " month" : " months"); }
+  function remDate(c, iso) { var d = llParse(iso); return d ? d.toLocaleDateString(c.loc || "en-IN", { day: "numeric", month: "short", year: "numeric" }) : ""; }
+  function remTaxRange(c, base) {             // the tax a deduction saves: at the person's slab when known, else 20% to 30%, each plus 4% cess
+    if (c.slab !== null && c.slab !== undefined) { var v = base * c.slab * 1.04; return { lo: v, hi: v, text: remRs(c, v) + " a year (your " + Math.round(c.slab * 100) + "% slab plus 4% cess)" }; }
+    var lo = base * 0.2 * 1.04, hi = base * 0.3 * 1.04;
+    return { lo: lo, hi: hi, text: remRs(c, lo) + " to " + remRs(c, hi) + " a year (at a 20% or 30% slab plus 4% cess)" };
+  }
+  var REM_DSCR_FAMILY = { "dscr-low": 1, "beocc-high": 1 };
+  var REM_LIB = {
+    "rate-reset": { title: "Ask your lender for a 0.25% lower rate", effort: "one call", time: "from the next EMI", risk: "low", reversible: true, where: "",
+      source: "The standard amortisation (EMI) formula; lenders' practice of a rate switch for existing borrowers for a fee; the RBI's framework on resetting floating rates on EMI loans (2023), cited by topic.",
+      preconditions: function (c) { if (!(c.loan > 0 && c.rate > 0.25 && c.emi > 0 && c.n > 0)) return false; return c.rateType === "fixed" ? "unknown" : true; },
+      preNote: function () { return "A fixed rate: ask what a switch to a floating rate costs before you count this saving."; },
+      impact: function (c) {
+        var e0 = remEmi(c.loan, c.rate, c.n), e1 = remEmi(c.loan, c.rate - 0.25, c.n), save = Math.max(0, e0 - e1), be = save > 0 ? Math.ceil(c.fee / save) : 0;
+        return Object.assign({ rupeesPerMonth: save, breakEvenMonths: be,
+          note: "Each 0.25% off saves about " + remRs(c, save) + " a month; a fee of " + remRs(c, c.fee) + " is earned back in " + remMo(be) + ". Ask your own lender first: moving to another lender adds legal and valuation costs. Many lenders shorten the tenure instead of the EMI: ask for the one you prefer.",
+          how: "EMI = L·i·(1+i)^n ÷ ((1+i)^n − 1), i = yearly rate ÷ 12. L " + remRs(c, c.loan) + ", rate " + c.rate + "% → " + (c.rate - 0.25).toFixed(2) + "%, n " + Math.round(c.n) + " months left: EMI " + remRs(c, e0) + " → " + remRs(c, e1) + ". Break-even = fee ÷ monthly saving." },
+          remMove(c, remMetrics(c, c.rent, c.emi - save, c.loan)));
+      },
+      assumes: function (c) { var a = []; if (c.feeAssumed) a.push(["fee", "a fee of " + remRs(c, c.fee)]); if (c.rateTypeAssumed) a.push(["rateType", "a floating rate"]); if (c.nAssumed) a.push(["", Math.round(c.n / 12) + " years left"]); return a; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a message to the bank", text: "Dear Sir or Madam,\n\nMy home loan of about " + remRs(c, c.loan) + " is at " + c.rate + "%. New borrowers are being offered lower rates. Please let me know the lowest rate you can offer me as an existing customer, the fee for the switch, and whether the EMI or the tenure would change.\n\nThank you." }; } },
+    "rent-renewal": { title: function (c) { return "Raise the rent by " + c.escal + "% at the renewal"; }, effort: "at renewal", time: function (c) { return c.renewal ? "from " + remDate(c, c.renewal) : "at the next renewal"; },
+      risk: "medium: a tenant may leave, so check three similar listings first", reversible: true, where: "",
+      source: "Common letting practice: a rise written into each renewal and benchmarked against comparable listings; DSCR as lenders use it (rent ÷ debt service).",
+      preconditions: function (c) { return c.rent > 0 && c.escal > 0; },
+      impact: function (c) {
+        var nr = c.rent * (1 + c.escal / 100), gain = (nr - c.rent) * (12 - c.vac) / 12;
+        return Object.assign({ rupeesPerMonth: gain, newRent: nr, newDscr: c.emi > 0 ? nr * (12 - c.vac) / (c.emi * 12) : 0,
+          note: "The rent goes from " + remRs(c, c.rent) + " to " + remRs(c, nr) + " a month.",
+          how: "New rent = rent × (1 + " + c.escal + "%). New DSCR = new rent × (12 − " + c.vac + " vacant months) ÷ (EMI " + remRs(c, c.emi) + " × 12)." },
+          remMove(c, remMetrics(c, nr, c.emi, c.loan)));
+      },
+      notes: function (c) { return c.local && c.state === "MH" ? ['<span data-where="IN-MH">In Maharashtra, leave-and-licence agreements usually run 11 months and the rise is agreed in the next agreement: a common practice, not a right to a rise.</span>'] : []; },
+      assumes: function (c) { return c.escalAssumed ? [["escal", "a " + c.escal + "% rise"]] : []; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a message to the tenant", text: "Hello,\n\nThe agreement is due for renewal" + (c.renewal ? " on " + remDate(c, c.renewal) : "") + ". I would like to renew with you. The new rent would be " + remRs(c, c.rent * (1 + c.escal / 100)) + " a month, in line with similar flats nearby. Please let me know a good time to talk.\n\nThank you." }; } },
+    "prepay": { title: function (c) { return "Prepay " + remRs(c, Math.min(c.prepay, c.loan)) + " once a year"; }, effort: "one form", time: "from the next EMI", risk: "low", reversible: false, where: "IN",
+      source: "Amortisation arithmetic; the RBI's rules that bar prepayment charges on floating-rate loans to individuals (its directions on prepayment charges for loans sanctioned or renewed from 1 Jan 2026, and earlier circulars), cited by topic.",
+      preconditions: function (c) {
+        if (!(c.loan > 0 && c.emi > 0 && c.prepay > 0 && isFinite(remMonths(c.loan, c.rate, c.emi)))) return false;
+        return c.rateType === "fixed" || c.buffer === null || c.buffer === undefined ? "unknown" : true;
+      },
+      preNote: function (c) { return c.rateType === "fixed" ? "A fixed rate: check your lender's prepayment fee first." : "Keep 6 months of spending in the buffer before you prepay: add your savings in Money to check it."; },
+      guard: function (c) {
+        if (c.buffer === null || c.buffer === undefined || !(c.bufferGap > 0)) return "";
+        var after = (c.liquid - Math.min(c.prepay, c.loan)) / c.bufferGap;
+        return after < 6 ? "Do not prepay yet: it would leave " + Math.max(0, after).toFixed(1) + " months of buffer, under the 6 to keep first. Build the buffer, then prepay." : "";
+      },
+      impact: function (c) {
+        var A = Math.min(c.prepay, c.loan), L1 = c.loan - A, n0 = remMonths(c.loan, c.rate, c.emi), n1 = remMonths(L1, c.rate, c.emi);
+        var cut = Math.max(0, n0 - n1), saved = Math.max(0, c.emi * cut - A), lower = c.emi * A / c.loan;   // EMI is linear in L, so a part-prepayment lowers it in proportion
+        var dscrWay = REM_DSCR_FAMILY[c.issue];
+        return Object.assign({ rupeesPerMonth: dscrWay ? lower : A * c.rate / 1200, monthsCut: cut, interestSaved: saved, newDebtToRent: c.rent > 0 ? L1 / (c.rent * 12) : 0,
+          note: "Keep the EMI and the loan ends " + remMo(cut) + " sooner, saving about " + remRs(c, saved) + " of interest; or ask the bank to lower the EMI by " + remRs(c, lower) + " a month instead.",
+          how: "Months left n = −ln(1 − i·L ÷ EMI) ÷ ln(1+i). L " + remRs(c, c.loan) + " → " + remRs(c, L1) + " at " + c.rate + "%, EMI " + remRs(c, c.emi) + ": " + Math.round(n0) + " → " + Math.round(n1) + " months. Interest saved = EMI × months cut − prepayment." },
+          remMove(c, remMetrics(c, c.rent, dscrWay ? c.emi - lower : c.emi, L1)));
+      },
+      assumes: function (c) { var a = []; if (c.prepayAssumed) a.push(["prepay", "one month's surplus"]); if (c.rateTypeAssumed) a.push(["rateType", "a floating rate"]); return a; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a message to the bank", text: "Dear Sir or Madam,\n\nI would like to make a part-prepayment of " + remRs(c, Math.min(c.prepay, c.loan)) + " on my home loan. Please confirm there is no charge, and reduce the " + (REM_DSCR_FAMILY[c.issue] ? "EMI" : "tenure") + " with it. Please send the revised schedule.\n\nThank you." }; } },
+    "midterm": { title: "Weigh a furnished or mid-term let", effort: "a project", time: "at the next vacancy", risk: "medium: more turnover and furnishing costs", reversible: true, where: "",
+      source: "Common letting practice: furnished and 3 to 6 month lets suit some places (near offices, hospitals, campuses) and not others.",
+      preconditions: function (c) { return c.rent > 0; },
+      impact: function () { return { rupeesPerMonth: null, note: "Verify local demand first: ask two local agents what a furnished or mid-term let fetches and how long it stays empty. We assume no premium until you know one.", how: "No number is assumed: a premium is real only where demand is." }; } },
+    "rooms": { title: "Let room by room", effort: "a project", time: "at the next vacancy", risk: "medium: more tenants to manage", reversible: true, where: "IN", foldOnly: true,
+      source: "Society bye-laws and municipal property-tax classes, which vary by city.",
+      preconditions: function (c) { return c.rent > 0 ? "unknown" : false; },
+      preNote: function () { return "Only with the society's written NOC, and after checking whether it changes the property-tax class in your city."; },
+      impact: function () { return { rupeesPerMonth: null, note: "Worth it only where shared lets are common and allowed.", how: "No number is assumed." }; } },
+    "hold-sell": { title: "A question to weigh: hold, or free the equity?", effort: "a project", time: "a decision, not a rush", risk: "high: hard to undo, with selling costs and tax", reversible: false, where: "", question: true,
+      source: "Opportunity cost: today's equity at another yield, set against the monthly top-up; price growth, costs and capital-gains tax change the answer.",
+      preconditions: function (c) { return c.dscr > 0 && c.dscr < 0.6 && c.beOcc > 150 && c.equity > 0; },
+      impact: function (c) {
+        var earn = c.equity * c.altYield / 100 / 12, top = Math.max(0, -c.cash);
+        return { rupeesPerMonth: null, headline: "Equity " + remRs(c, c.equity) + " at " + c.altYield + "%: about " + remRs(c, earn) + " a month · holding costs " + remRs(c, top) + " a month",
+          note: "Neither answer is right by itself. Price growth, selling costs, stamp duty on any next home and capital-gains tax all change it. A question for a fee-only adviser, never a push.",
+          how: "Equity = value − loan. Monthly earning = equity × " + c.altYield + "% ÷ 12. Top-up = EMI + outgo ÷ 12 − rent." };
+      },
+      assumes: function (c) { return c.altYieldAssumed ? [["altYield", "a " + c.altYield + "% yield elsewhere"]] : []; } },
+    "setoff-claim": { title: "Claim the full ₹2 lakh set-off in your return", effort: "one form", time: "at the next tax return", risk: "low", reversible: true, where: "IN",
+      source: "Income-tax rules on house property: a loss sets off against other income up to ₹2 lakh a year (old regime only); the rest carries forward 8 years against house-property income. The Income-tax Act 2025 renumbers the sections from April 2026, so we cite the topic.",
+      preconditions: function (c) { return c.regime !== "new" && c.setOff > 0; },
+      impact: function (c) { var t = remTaxRange(c, c.setOff);
+        return { rupeesPerMonth: t.lo / 12, headline: "Worth " + t.text, note: "The interest is deducted in full; the loss it makes counts against salary up to " + remRs(c, c.setOff) + " this year.",
+          how: "Set-off = min(loss, ₹2,00,000) = " + remRs(c, c.setOff) + ". Tax value = set-off × slab × 1.04 (cess). Loss = interest − (rent − municipal tax) × 70%." }; },
+      assumes: function (c) { return c.regimeAssumed ? [["regime", "the old regime"]] : []; } },
+    "setoff-joint": { title: "Each joint owner who also borrows claims their own share", effort: "one form", time: "at the next tax return", risk: "low", reversible: true, where: "IN",
+      source: "Income-tax rules on house property: co-owners are taxed on their own share, each with their own ₹2 lakh set-off limit (old regime).",
+      preconditions: function (c) { return c.regime !== "new" && c.owner === "joint" && c.borrower === "joint" && c.loss > 200000; },
+      impact: function (c) { var s = c.share / 100, both = Math.min(c.loss * s, 200000) + Math.min(c.loss * (1 - s), 200000), extra = Math.max(0, both - Math.min(c.loss, 200000)), t = remTaxRange(c, extra);
+        return { rupeesPerMonth: t.lo / 12, headline: "Another " + remRs(c, extra) + " of set-off, worth " + t.text, note: "Each claims their share of the interest in their own return.", how: "Each owner: min(loss × share, ₹2,00,000). Shares " + c.share + "% and " + (100 - c.share) + "%." }; } },
+    "setoff-carry": { title: function (c) { return "Carry " + remRs(c, c.carry) + " forward in this year's return"; }, effort: "one form", time: "at the next tax return", risk: "low", reversible: true, where: "IN",
+      source: "Income-tax rules on house property: the loss above ₹2 lakh carries forward 8 years, against house-property income only.",
+      preconditions: function (c) { return c.regime !== "new" && c.carry > 0; },
+      impact: function (c) { return { rupeesPerMonth: null, note: "It counts only against house-property income in the next 8 years, for example once the rent is higher than the interest. Show it in each return so it is not lost.", how: "Carried forward = loss − ₹2,00,000 = " + remRs(c, c.carry) + "." }; } },
+    "regime-check": { title: "Compare the two regimes once this year", effort: "one form", time: "before you file", risk: "low", reversible: true, where: "IN",
+      source: "Income-tax rules: under the new regime a house-property loss does not set off against other income; under the old regime up to ₹2 lakh does.",
+      preconditions: function (c) { return c.regime === "new" && c.setOff > 0; },
+      impact: function (c) { var t = remTaxRange(c, c.setOff);
+        return { rupeesPerMonth: null, headline: "The old regime would use " + remRs(c, c.setOff) + " of this loss: " + t.text, note: "Weigh it against the new regime's lower rates, in Money, tax levers.", how: "Set-off under the old regime = min(loss, ₹2,00,000)." }; } },
+    "police": { title: "Send the tenant's details to the police", effort: "one form", time: "today", risk: "legal: required in many Indian cities", reversible: true, where: "IN", hard: true,
+      source: "Local police orders on tenant information in many Indian cities, cited by topic.",
+      preconditions: function (c) { return !!c.policeOpen; },
+      impact: function () { return { rupeesPerMonth: null, headline: "A compliance gap closed in one form", note: "Most cities take it online; the ready message is under Next for this home.", how: "From your agreement's start date: tenant details are not yet marked as sent." }; },
+      doIt: function (c) { return { kind: "call", label: "Submitted", js: "gmLlDone(" + c.pi + ",'police','')" }; } },
+    "registration": { title: "Register the leave-and-licence agreement", effort: "one form", time: "this week", risk: "legal: registration is required in Maharashtra", reversible: true, where: "IN-MH", hard: true,
+      source: "Maharashtra rent law: leave-and-licence agreements must be registered (online registration is available).",
+      preconditions: function (c) { return !!c.regOpen && c.state === "MH"; },
+      impact: function () { return { rupeesPerMonth: null, headline: "Protects your claim on the flat and the deposit", note: "Online registration with e-KYC usually takes about an hour.", how: "From your agreement's start date: registration is not yet marked as done." }; },
+      doIt: function (c) { return { kind: "call", label: "Registered", js: "gmLlDone(" + c.pi + ",'registered','')" }; } }
+  };
+  var REMEDIES = {};
+  [["dscr-low", ["rate-reset", "rent-renewal", "prepay", "midterm", "rooms", "hold-sell"]],
+    ["beocc-high", ["rent-renewal", "rate-reset", "prepay", "midterm", "rooms", "hold-sell"]],
+    ["debt-heavy", ["prepay", "rate-reset", "rent-renewal", "hold-sell"]],
+    ["yield-thin", ["rent-renewal", "midterm", "rooms", "hold-sell"]],
+    ["setoff-cap", ["setoff-claim", "setoff-joint", "setoff-carry", "regime-check"]],
+    ["papers-open", ["police", "registration"]]].forEach(function (x) { REMEDIES[x[0]] = x[1].map(function (id) { return Object.assign({ id: id }, REM_LIB[id]); }); });
+  var REM_ISSUE = {   // what an issue says beyond its fixes: a note that applies, a warning that matters
+    "setoff-cap": function (c) {
+      var out = { notes: [], warns: [] }, nm = c.names || { me: "You", partner: "Partner" };
+      if (c.regime === "new") out.notes.push("The ₹2 lakh set-off applies under the old regime only. Under the new regime this loss does not reduce tax on salary; ask your CA what happens to it there.");
+      if (c.loan > 0 && c.owner !== c.borrower) {
+        var who = function (k) { return k === "joint" ? nm.me + " and " + nm.partner : k === "partner" ? nm.partner : nm.me; };
+        out.warns.push("The home is in " + who(c.owner) + "’s name, but " + who(c.borrower) + " pays the loan. Only an owner who is also a borrower can claim the interest, so check who files this claim with your CA.");
+      }
+      return out;
+    }
+  };
+  function remRank(a, b) {
+    return (b.hard ? 1 : 0) - (a.hard ? 1 : 0) || (a.foldOnly ? 1 : 0) - (b.foldOnly ? 1 : 0) || (a.question ? 1 : 0) - (b.question ? 1 : 0)
+      || (a.pre === true ? 0 : 1) - (b.pre === true ? 0 : 1) || (a.moves ? 0 : 1) - (b.moves ? 0 : 1) || b.score - a.score;
+  }
+  // The engine: pure. The same ctx always gives the same fixes; ctx is never changed; no storage, network or AI is touched.
+  window.gmRemedies = function (issueId, ctx) {
+    var c = Object.assign({}, ctx || {}, { issue: issueId }), fixes = [], guards = [], notes = [], warns = [];
+    (REMEDIES[issueId] || []).forEach(function (R) {
+      if (R.where && c.local === false) return;                        // Global: content true in one country only is not shown
+      var pre = R.preconditions(c); if (pre === false) return;
+      var g = R.guard ? R.guard(c) : ""; if (g) { guards.push(g); return; }
+      var im = R.impact(c) || {}, rpm = typeof im.rupeesPerMonth === "number" && isFinite(im.rupeesPerMonth) ? im.rupeesPerMonth : null;
+      if (R.notes) notes = notes.concat(R.notes(c));
+      fixes.push({ id: R.id, title: typeof R.title === "function" ? R.title(c) : R.title, effort: R.effort, time: typeof R.time === "function" ? R.time(c) : R.time,
+        risk: R.risk, reversible: !!R.reversible, where: R.where || "", source: R.source, hard: !!R.hard, foldOnly: !!R.foldOnly, question: !!R.question,
+        pre: pre === true ? true : "unknown", preNote: pre !== true && R.preNote ? R.preNote(c) : "", impact: im,
+        moves: !im.metric || Math.abs(im.after - im.before) > 1e-9,   // a fix that leaves this issue's number where it is ranks below one that moves it
+        assumes: R.assumes ? R.assumes(c) : [], doIt: R.doIt ? R.doIt(c) : null, score: rpm !== null && rpm > 0 ? rpm / (REM_EFFORT[R.effort] || 8) : -1 });
+    });
+    if (REM_ISSUE[issueId]) { var x = REM_ISSUE[issueId](c); notes = notes.concat(x.notes); warns = warns.concat(x.warns); }
+    fixes.sort(remRank);
+    return { issue: issueId, fixes: fixes, guards: guards, notes: notes, warns: warns };
+  };
+  window.GM_REMEDIES = REMEDIES;
+  // The person's own numbers for one home, read once: from propCalc, the money model and the facts given once (ask-by-frequency).
+  function remSet(v) { return v !== undefined && v !== null && String(v).trim() !== ""; }
+  function remCtx(p, pi) {
+    var r = propCalc(p), f = G("gm_facts", {}) || {}, M = null; try { M = window.gmMoney ? gmMoney() : null; } catch (e) {}
+    var loan = r.loanAmt, rate = r.ratePct, emi = r.emiAmt, n0 = remMonths(loan, rate, emi), nOk = isFinite(n0) && n0 > 0;
+    var rw = M && M.buffer ? M.buffer : null, surplus = M && isFinite(M.left) ? Math.max(0, Math.round(M.left)) : 0;
+    var gr = G("gm_region", null), own = ownKind(p), bor = p.borrower === "partner" || p.borrower === "joint" ? p.borrower : "me";
+    var slab = null;
+    if (own === "me" && window.P && num(P.gross) > 0) { var ti = num(P.gross) * 12 - 50000; slab = ti > 1000000 ? 0.3 : ti > 500000 ? 0.2 : ti > 250000 ? 0.05 : 0; }
+    var rows = (p.use || "letout") === "letout" ? llRows(p) : [], open = function (id) { return rows.some(function (x) { return x.id === id && x.days < 0; }); };
+    var st = llParse(p.start), ren = st ? llAddMonths(st, llNum(p.months) || 11) : null;
+    return { pi: pi, loan: loan, rate: rate, emi: emi, n: nOk ? n0 : (r.tenureM || 240), nAssumed: !nOk && !r.tenureM,
+      rent: r.rentM, vac: r.vacM, out: r.outA, val: r.valAmt, equity: r.equity, cash: r.cashflow, dscr: r.dscr, beOcc: r.beOcc,
+      loss: r.loss, setOff: r.setOffUsable, carry: r.carryForward,
+      rateType: p.rateType === "fixed" ? "fixed" : "floating", rateTypeAssumed: !remSet(p.rateType),
+      fee: remSet(p.fee) ? num(p.fee) : 10000, feeAssumed: !remSet(p.fee),
+      escal: remSet(p.escal) ? num(p.escal) : 5, escalAssumed: !remSet(p.escal),
+      prepay: remSet(p.prepay) ? num(p.prepay) : surplus, prepayAssumed: !remSet(p.prepay),
+      altYield: remSet(p.altYield) ? num(p.altYield) : 7, altYieldAssumed: !remSet(p.altYield),
+      liquid: rw ? rw.liquid : null, bufferGap: rw ? rw.gapM : null, buffer: rw ? rw.months : null,
+      regime: f.regime === "new" ? "new" : "old", regimeAssumed: f.regime !== "new" && f.regime !== "old",
+      slab: slab, owner: own, borrower: bor, share: ownMyShare(p), state: f.state || "", local: gr === null || gr === undefined || gr === "local",
+      policeOpen: open("police"), regOpen: open("registration"), renewal: ren && ren >= llDay(new Date()) ? llIso(ren) : "",
+      loc: "en-IN", cur: (window.P && P.cur) || "INR", names: ownNames() };
+  }
+  window.gmRemedyCtx = function (i) { var p = props()[i]; return p ? remCtx(p, i) : null; };
+  // How to fix it: the best fix open with its number and one button; the others under More ways (n); a guard says what not to do.
+  function remLine(c, x) {
+    var im = x.impact || {}; if (im.headline) return im.headline;
+    var a = im.rupeesPerMonth > 0 ? "+" + remRs(c, im.rupeesPerMonth) + " a month" : "", b = im.metric && im.metricBefore !== im.metricAfter ? im.metric + " " + im.metricBefore + " → " + im.metricAfter : "";
+    if (c.plain) return a;   // plain-first: the rupees by default; the ratio's move sits under How we worked this out
+    return a && b ? a + " · " + b : a || b;
+  }
+  function remFixHTML(c, R, x, best, brief) {
+    if (brief) return '<div class="gm-fix-item gm-fix-best" data-rem="' + esc(x.id) + '"><div style="font-size:13.5px;font-weight:800;color:var(--text);overflow-wrap:anywhere">' + esc(x.title) + '</div>'
+      + (remLine(c, x) ? '<div class="gm-fix-n" style="font-size:12.5px;font-weight:700;color:var(--text);margin-top:2px">' + esc(remLine(c, x)) + '</div>' : "")
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">The same step as above: one action moves both numbers.</div></div>';
+    var tid = "gmFix-" + (c.key || c.pi) + "-" + R.issue + "-" + x.id, im = x.impact || {}, line = remLine(c, x);
+    var h = '<div class="gm-fix-item' + (best ? " gm-fix-best" : "") + '" data-rem="' + esc(x.id) + '" style="' + (best ? "" : "padding:7px 0;border-top:1px solid var(--border)") + '">'
+      + '<div style="font-size:' + (best ? "13.5" : "12.5") + 'px;font-weight:800;color:var(--text);overflow-wrap:anywhere">' + esc(x.title) + '</div>'
+      + (line ? '<div class="gm-fix-n" style="font-size:12.5px;font-weight:700;color:var(--text);margin-top:2px;overflow-wrap:anywhere">' + esc(line) + '</div>' : "")
+      + (im.note ? '<div style="font-size:12px;color:var(--text);line-height:1.5;margin-top:2px">' + esc(im.note) + '</div>' : "")
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">' + esc(x.effort + " · " + x.time + " · risk " + x.risk + (x.reversible ? "" : " · hard to undo")) + '</div>'
+      + (x.preNote ? '<div style="font-size:11.5px;color:var(--text);margin-top:2px">' + esc(x.preNote) + '</div>' : "");
+    if (x.assumes && x.assumes.length) h += '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Assumes ' + x.assumes.map(function (a) {
+      return a[0] ? '<a href="#" class="gm-fix-ask" style="font-size:11.5px;color:var(--text);text-decoration:underline" onclick="' + (c.askFn ? c.askFn + '(\'' + a[0] + '\')' : 'gmRemAsk(' + c.pi + ',\'' + a[0] + '\')') + ';return false">' + esc(a[1]) + '</a>' : esc(a[1]);
+    }).join(", ") + '. Tap to change.</div>';
+    if (x.doIt && x.doIt.kind === "copy") h += '<div style="margin-top:6px"><button type="button" class="btn-sm" onclick="gmLlCopy(\'' + tid + '\')">' + esc(x.doIt.label) + '</button></div>'
+      + '<details style="margin-top:4px"><summary style="font-size:12px;cursor:pointer">See the message</summary><textarea readonly id="' + tid + '" rows="5" aria-label="' + esc(x.doIt.label) + '" style="width:100%;font-size:12px">' + esc(x.doIt.text) + '</textarea></details>';
+    else if (x.doIt && x.doIt.kind === "call") h += '<div style="margin-top:6px"><button type="button" class="btn-sm" onclick="' + esc(x.doIt.js) + '">' + esc(x.doIt.label) + '</button></div>';
+    h += '<details class="gm-fix-how" style="margin-top:4px"><summary style="font-size:11.5px;cursor:pointer;color:var(--muted)">How we worked this out</summary><div style="font-size:11.5px;line-height:1.5;color:var(--text)">'
+      + esc(im.how || "") + (c.plain && im.metric && im.metricBefore !== im.metricAfter ? '<br>' + esc(im.metric + ": " + im.metricBefore + " → " + im.metricAfter) : "") + '<br>Source: ' + esc(x.source || "") + '</div></details>';
+    return h + '</div>';
+  }
+  function remBlockHTML(issueId, c, R, led) {
+    R = R || gmRemedies(issueId, c);
+    if (!R.fixes.length && !R.notes.length && !R.guards.length && !R.warns.length) return "";
+    var lead = R.fixes.filter(function (x) { return !x.foldOnly; })[0] || R.fixes[0], rest = R.fixes.filter(function (x) { return x !== lead; });
+    var h = '<div class="gm-fix" data-issue="' + esc(issueId) + '" id="gmFix-' + esc(c.key || c.pi) + '-' + esc(issueId) + '" role="group" aria-label="How to fix it" style="margin:6px 0 2px;padding:9px 10px;border:1px solid var(--border);border-radius:12px;background:var(--cardAlt)">'
+      + '<div style="font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">How to fix it</div>';
+    R.warns.forEach(function (w) { h += '<div class="gm-fix-warn" style="font-size:12px;line-height:1.5;border-inline-start:3px solid var(--amber);padding-inline-start:8px;margin:2px 0 6px;color:var(--text)">' + esc(w) + '</div>'; });
+    if (lead) { h += remFixHTML(c, R, lead, true, !!(led && led[lead.id])); if (led) led[lead.id] = 1; }
+    if (rest.length) h += '<details class="gm-fix-more" style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">More ways (' + rest.length + ')</summary>' + rest.map(function (x) { return remFixHTML(c, R, x, false); }).join("") + '</details>';
+    R.guards.forEach(function (g) { h += '<div class="gm-fix-not" style="font-size:12px;line-height:1.5;margin-top:6px;color:var(--text)"><b>What not to do:</b> ' + esc(g) + '</div>'; });
+    R.notes.forEach(function (n) { h += '<div class="gm-fix-note" style="font-size:11.5px;line-height:1.5;margin-top:6px;color:var(--muted)">' + n + '</div>'; });   // notes are code-written HTML (a where tag), never the person's text
+    return h + '</div>';
+  }
+  window.gmRemBlockHTML = function (issueId, c) { return remBlockHTML(issueId, c); };
+  window.gmRemAsk = function (i, k) {
+    var box = document.querySelector('details.gm-prop-nums[data-pi="' + i + '"]'); if (!box) return;
+    var outer = box.parentNode && box.parentNode.closest ? box.parentNode.closest("details") : null; if (outer) outer.open = true;
+    box.open = true; var el = box.querySelector('[data-rk="' + k + '"]'); if (!el) return;
+    try { el.scrollIntoView({ block: "center" }); } catch (e) {}
+    var t = el.matches && el.matches("input") ? el : el.querySelector("button, input"); if (t) try { t.focus(); } catch (e) {}
+  };
+  window.gmRemRegime = function (v) { var f = G("gm_facts", {}) || {}; f.regime = v === "new" ? "new" : "old"; S_("gm_facts", f); renderAll(); };
+  function remInputsHTML(p, i) {
+    var f = G("gm_facts", {}) || {}, reg = f.regime === "new" || f.regime === "old" ? f.regime : "";
+    var fld = function (k, lab, ph) { return '<label class="f-label">' + lab + '</label><input inputmode="decimal" data-rk="' + k + '" value="' + esc(keep0(p[k])) + '" placeholder="' + ph + '" onchange="gmPropSet(' + i + ',\'' + k + '\',this.value)">'; };
+    var btn = function (on, js, txt) { return '<button type="button" class="btn-sm" aria-pressed="' + on + '" style="flex:1;background:' + (on ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)") + '" onclick="' + js + '">' + txt + '</button>'; };
+    return '<div class="gm-fix-in" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)"><div style="font-size:12.5px;font-weight:800">For the fixes <span style="font-weight:500;color:var(--muted)">· each has a default</span></div>'
+      + '<label class="f-label">The loan rate is</label><div data-rk="rateType">' + ownBtns(i, "rateType", p.rateType === "fixed" ? "fixed" : p.rateType === "floating" ? "floating" : "", [["floating", "Floating"], ["fixed", "Fixed"]]) + '</div>'
+      + fld("fee", "Lender's fee for a rate cut (₹)", "10,000") + fld("escal", "Rent rise at renewal (%)", "5")
+      + fld("prepay", "A yearly prepayment you could make (₹)", "one month's surplus") + fld("altYield", "Yield the equity could earn elsewhere (%)", "7")
+      + '<label class="f-label">Your tax regime this year (all your homes)</label><div data-rk="regime" style="display:flex;gap:6px;margin-bottom:8px">'
+      + btn(reg === "old", "gmRemRegime('old')", "Old") + btn(reg === "new", "gmRemRegime('new')", "New") + '</div></div>';
+  }
+  /* ── Money health (every-issue-has-a-path, slice 2; owner 2026-11-25) ──────────────────────────────────────────────
+     One bird's-eye review that finds where money leaks or protection is thin, and moves it where it is needed. Code decides,
+     by pure functions on the person's own numbers: gmMhScan (the anomalies), gmMhEndow (continue, paid-up or surrender),
+     gmMhTarget and gmMhMacro (the strategic mix, a glide path and a tilt of at most 5 points), gmMhDrift (the 5/25 band),
+     gmMhCadence (a quarterly review, at most two actions a year) and gmMhWaterfall (where freed money goes, in order). The fixes
+     go through the one REMEDIES engine above. Facts are asked once (gm_mhealth, on this device only); no network call and no AI.
+     Education, not advice: every figure says how it was worked out, and the person decides. */
+  var MH_K = "gm_mhealth";
+  var MH_TYPES = { term: ["Term", ""], endow: ["Endowment or money-back", ""], whole: ["Whole life", ""], pli: ["PLI or RPLI (post office)", "IN"],
+    ulip: ["ULIP", ""], health: ["Health (base)", ""], topup: ["Top-up or super top-up", ""] };
+  var MH_DUE = { term: "Term cover", endow: "Savings policy", whole: "Whole life cover", pli: "Post office policy", ulip: "Unit-linked policy", health: "Health cover", topup: "Top-up cover" };   // plain words for the due list
+  var MH_SAVINGS = { endow: 1, whole: 1, pli: 1 };            // traditional plans: cover bundled with a savings part that earns little
+  var MH_LIFE = { term: 1, endow: 1, whole: 1, pli: 1, ulip: 1 };
+  var MH_WHO = [["me", "You"], ["partner", "Partner"], ["family", "Family floater"], ["kids", "Children"], ["parents", "Parents"]];
+  var MH_MEMBERS = { me: ["me"], partner: ["partner"], kids: ["kids"], family: ["me", "partner", "kids"], parents: ["parents"] };
+  // Editable rough figures, each said where it is used. Term: cover per ₹1,000 of yearly premium for a healthy non-smoker buying
+  // online, by age band (₹1 crore for about ₹9,500 a year at 25, ₹14,000 at 35, ₹30,000 at 45, ₹70,000 at 55). Super top-up: the
+  // yearly premium per ₹10 lakh above a base cover, by the eldest adult's age. Get real quotes before acting on either.
+  var MH_BENCH = { irr: 5, infl: 6, alt: 7, sav: 3, drag: 0.75, tier: 1 };
+  function mhCpkFor(age) { return age < 30 ? 1000000 : age < 40 ? 700000 : age < 50 ? 330000 : 140000; }
+  function mhStuFor(age) { return age < 35 ? 1000 : age < 45 ? 1500 : age < 55 ? 2800 : 6000; }
+  function mhClamp(v, lo, hi) { v = +v; return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : lo; }
+  function mhN(v, lo, hi) { var n = num(v === undefined || v === null ? "" : v); return mhClamp(n, lo === undefined ? 0 : lo, hi === undefined ? 1e12 : hi); }
+  function mhSet(v) { return v !== undefined && v !== null && String(v).trim() !== ""; }
+  function mhState() {
+    var s = G(MH_K, { policies: [], funds: [], macro: {}, alloc: {}, bench: {} });
+    var obj = function (o) { return o && typeof o === "object" && !Array.isArray(o) ? o : {}; };
+    s.policies = (Array.isArray(s.policies) ? s.policies : []).filter(function (p) { return p && typeof p === "object" && MH_TYPES[p.type]; });
+    s.funds = (Array.isArray(s.funds) ? s.funds : []).filter(function (f) { return f && typeof f === "object"; });
+    s.macro = obj(s.macro); s.alloc = obj(s.alloc); s.bench = obj(s.bench);
+    s.alloc.reviews = (Array.isArray(s.alloc.reviews) ? s.alloc.reviews : []).filter(function (d) { return typeof d === "string" && llParse(d); });
+    s.alloc.acts = (Array.isArray(s.alloc.acts) ? s.alloc.acts : []).filter(function (d) { return typeof d === "string" && llParse(d); });
+    return s;
+  }
+  function mhPut(s) { S_(MH_K, s); }
+  function mhYears(fromIso, now) { var d = llParse(fromIso); return d ? Math.max(0, (now - d) / 31557600000) : 0; }
+  function mhRs(n) { return remRs({}, Math.max(0, n)); }
+  function mhShort(n) { n = Math.max(0, Math.round(n)); return n >= 1e7 ? "₹" + (n / 1e7).toFixed(2) + " crore" : n >= 1e5 ? "₹" + (n / 1e5).toFixed(1) + " lakh" : mhRs(n); }
+
+  // The strategic mix: equity share of investments, from age, horizon, dependants and how steady the income is.
+  window.gmMhTarget = function (c) {
+    var age = mhN(c.age, 0, 110); if (!(age >= 18)) return null;
+    var hz = mhN(c.horizon, 0, 80), deps = mhN(c.deps, 0, 20);
+    var strat = function (a, h) {
+      var base = 100 - a, dep = -Math.min(10, 2.5 * deps), work = c.work === "permanent" ? 5 : c.work === "contract" ? -10 : 0, hzA = h < 10 && h >= 5 ? -10 : 0;
+      var v = mhClamp(base + dep + work + hzA, 20, 80); if (h < 5) v = Math.min(v, 30);
+      return { v: Math.round(v), base: base, dep: dep, work: work, hz: h < 5 ? "capped at 30% (under 5 years)" : hzA ? "−10 (5 to 10 years)" : "0" };
+    };
+    var s = strat(age, hz), own = mhSet(c.override), v = own ? Math.round(mhClamp(num(c.override), 0, 100)) : s.v;
+    var tilt = mhClamp(c.tilt || 0, -5, 5), eff = Math.round(mhClamp(v + tilt, 0, 100));
+    var glide = [0, 5, 10, 15].map(function (k) { return { age: age + k, equity: own ? v : strat(age + k, Math.max(0, hz - k)).v }; });
+    var how = own ? "Your own target: " + v + "% equity." : "100 − age " + age + " = " + s.base + "; dependants " + (s.dep ? "−" + Math.abs(s.dep) : "0") + "; income " + (s.work > 0 ? "+" : s.work < 0 ? "−" : "") + Math.abs(s.work)
+      + " (" + (c.work || "salaried") + "); horizon " + Math.round(hz) + " years: " + s.hz + "; kept between 20% and 80% = " + s.v + "% equity.";
+    return { strategic: v, tilt: tilt, target: eff, own: own, glide: glide, how: how + (tilt ? " Tactical tilt " + (tilt > 0 ? "+" : "−") + Math.abs(tilt) + " = " + eff + "%." : "") };
+  };
+  // A personal monetary policy committee: the repo rate and CPI inflation, typed once a quarter, move only the debt duration
+  // and a tilt of at most 5 points. A high real rate makes debt pay, so equity leans down; a negative one leans it up.
+  window.gmMhMacro = function (m) {
+    m = m || {}; var repo = num(m.repo), cpi = num(m.cpi);
+    if (!(repo > 0) || !(cpi > 0) || repo > 25 || cpi > 30) return { set: false, tilt: 0, real: null, duration: "" };
+    var real = repo - cpi, tilt = Math.round(mhClamp((1 - real) * 2.5, -5, 5)) || 0;
+    var duration = real >= 1.5 ? "medium to long (5 to 10 years): a high real rate is worth locking in"
+      : real >= 0 ? "short to medium (1 to 4 years)" : "short (under 3 years) or floating: inflation is above the policy rate";
+    return { set: true, repo: repo, cpi: cpi, real: real, tilt: tilt, duration: duration,
+      how: "Real rate = repo " + repo + "% − CPI " + cpi + "% = " + (real < 0 ? "−" : "") + Math.abs(real).toFixed(2) + "%. Tilt = (1 − real rate) × 2.5, kept within ±5 points = " + (tilt > 0 ? "+" : tilt < 0 ? "−" : "") + Math.abs(tilt) + "." };
+  };
+  // The 5/25 band: act only when the mix is more than 5 points away, or more than 25% of the target away, whichever comes first.
+  window.gmMhDrift = function (actual, target) {
+    var a = mhClamp(actual, 0, 100), t = mhClamp(target, 0, 100), d = a - t, rel = t > 0 ? Math.abs(d) / t : (Math.abs(d) > 0 ? 1 : 0);
+    return { drift: d, rel: rel, breach: Math.abs(d) > 5 || rel > 0.25 };
+  };
+  // Checked once a quarter; acted on at most twice in any 12 months. Inside the band, nothing is said.
+  window.gmMhCadence = function (alloc, todayIso) {
+    var t = llParse(todayIso) || llDay(new Date()), q = function (d) { return d.getFullYear() * 4 + Math.floor(d.getMonth() / 3); };
+    var rev = ((alloc && alloc.reviews) || []).map(llParse).filter(Boolean), acts = ((alloc && alloc.acts) || []).map(llParse).filter(Boolean)
+      .filter(function (d) { return d <= t && (t - d) < 365 * 86400000; }).sort(function (a, b) { return a - b; });
+    var reviewed = rev.some(function (d) { return q(d) === q(t); }), canAct = acts.length < 2;
+    var next = canAct ? "" : llIso(new Date(acts[acts.length - 2].getTime() + 365 * 86400000));
+    return { reviewed: reviewed, due: !reviewed, acts: acts.length, canAct: canAct, nextAct: next };
+  };
+  // Where freed money goes, in this order: the buffer, term cover, health cover, costly debt, then goals.
+  window.gmMhWaterfall = function (amount, c) {
+    var left = mhN(amount), out = [];
+    [["buffer", "Emergency fund to " + (c.bufTarget || 6) + " months", c.bufGap], ["term", "Term cover for the gap (the first year's premium)", c.termGapPrem],
+      ["health", "Health cover: a super top-up (the first year's premium)", c.healthGapPrem], ["debt", "Costly debt, the highest rate first", c.costlyDebt]]
+      .forEach(function (x) { var take = Math.min(left, mhN(x[2])); if (take > 0) { out.push({ k: x[0], label: x[1], amt: take }); left -= take; } });
+    if (left > 0) out.push({ k: "goals", label: "Your goals and investments", amt: left });
+    return out;
+  };
+  // Continue, make paid-up or surrender, valued at maturity on the person's own values. Never invented: a value not given is null.
+  window.gmMhEndow = function (p, c, now) {
+    now = now || llDay(new Date());
+    var prem = mhN(p.prem), term = mhN(p.term, 0, 100), ppt = mhN(p.ppt, 0, 100) || term, el = mhYears(p.start, now);
+    var n = Math.max(0, term - el), paid = Math.min(ppt, Math.ceil(el - 1e-9)), m = Math.max(0, ppt - paid), wait = Math.max(0, paid - el);
+    var r = mhN(c.irr, 0, 30) / 100, a = mhN(c.alt, 0, 30) / 100, sv = mhSet(p.sv) ? mhN(p.sv) : null, pu = mhSet(p.pu) ? mhN(p.pu) : null, mv = mhSet(p.mv) ? mhN(p.mv) : null;
+    var prems = function (rate) { var s = 0; for (var k = 0; k < m && k < 100; k++) s += prem * Math.pow(1 + rate, Math.max(0, n - (wait + k))); return s; };
+    var cont = mv !== null ? mv : sv !== null ? sv * Math.pow(1 + r, n) + prems(r) : null;
+    var up = pu !== null ? pu + prems(a) : null, sur = sv !== null ? sv * Math.pow(1 + a, n) + prems(a) : null;
+    return { years: n, premsLeft: m, prem: prem, cont: cont, paidUp: up, surrender: sur, contFrom: mv !== null ? "maturity" : "estimate",
+      real: ((1 + r) / (1 + mhN(c.infl, 0, 30) / 100) - 1) * 100, cpk: prem > 0 ? mhN(p.sa) / prem * 1000 : 0, maturesIn: Math.round(n) };
+  };
+
+  // The person's own numbers, read once (ask-by-frequency): the profile, the money model and the facts in gm_mhealth.
+  function mhCtx(sIn) {
+    var s = sIn || mhState(), b = s.bench, M = null; try { M = profOK() ? gmMoney() : null; } catch (e) {}
+    var PP = window.P || {}, age = gmAgeOf(PP.dob), two = gmEarners(PP) === 2, partner = two || !!PP.pname;
+    var kids = (PP.kids || []).filter(function (k) { return k && k.name; }).length, a = gmMine(PP), pt = two ? gmPartner(PP) : {};
+    var gr = G("gm_region", null), local = gr === null || gr === undefined || gr === "local";
+    var bv = function (k) { return mhSet(b[k]) ? num(b[k]) : MH_BENCH[k]; };
+    var rw = M && M.buffer ? M.buffer : null, spend = M && M.spend > 0 ? M.spend : num(PP.exp);
+    var gapM = rw ? rw.gapM : spend, liquid = rw ? rw.liquid : Math.max(0, num(PP.sav)) + num(a.fd) + num(pt.fd), target = rw ? rw.target : 6;
+    var bufNeed = target * gapM, idle = gapM > 0 ? Math.max(0, liquid - bufNeed) : 0;
+    var pay = num(PP.gross) || num(PP.net), need = pay > 0 ? gmTermNeed(pay, true) + (two ? gmTermNeed(num(pt.gross) || num(pt.net), false) : 0) : 0;
+    var pol = s.policies, inForce = function (p) { return p.st !== "applied"; };
+    var lifeRows = pol.filter(function (p) { return MH_LIFE[p.type] && inForce(p); });
+    var lifeHave = lifeRows.length ? lifeRows.reduce(function (t, p) { return t + mhN(p.sa); }, 0) : num(a.term) + num(pt.term);
+    var termIn = pol.filter(function (p) { return p.type === "term" && inForce(p); }).reduce(function (t, p) { return t + mhN(p.sa); }, 0);
+    var hRows = pol.filter(function (p) { return (p.type === "health" || p.type === "topup") && !p.emp && p.who !== "parents"; });
+    var hHave = hRows.length ? hRows.reduce(function (t, p) { return t + mhN(p.sa); }, 0) : num(a.health) + num(pt.health);
+    var heads = 1 + (partner ? 1 : 0) + kids, tier = mhClamp(Math.round(bv("tier")), 1, 3);
+    var floor = mhSet(b.floor) ? mhN(b.floor) : Math.max(tier === 1 ? 1000000 : 500000, heads * 500000 * (tier === 1 ? 1 : tier === 2 ? 0.75 : 0.5));
+    var cpk = mhSet(b.cpk) ? mhN(b.cpk, 1) : mhCpkFor(age || 35), stu = mhSet(b.stu) ? mhN(b.stu) : mhStuFor(age || 35);
+    var alt = bv("alt"), lifeGap = Math.max(0, need - lifeHave), hGap = Math.max(0, floor - hHave);
+    var stuAmt = hGap > 0 ? Math.ceil(hGap / 500000) * 500000 : 0;
+    var loans = (PP.loans || []).filter(function (x) { return x && !/home/i.test(String(x.type || "")) && num(x.remaining) > 0 && num(x.rate) > alt; })
+      .map(function (x) { return { type: String(x.type || "Loan"), bal: num(x.remaining), rate: mhClamp(num(x.rate), 0, 60), emi: num(x.emi) }; })
+      .sort(function (x, y) { return y.rate - x.rate; });
+    // the mix: funds and stocks plus half of NPS are equity; EPF, PPF, half of NPS and cash above the buffer are debt
+    var sum = function (k) { return num(a[k]) + num(pt[k]); }, invest = M ? M.invest : 0, ret = sum("epf") + sum("nps") + sum("ppf");
+    var eq = sum("mf") + Math.max(0, invest - ret - sum("mf") - sum("fd")) + sum("nps") / 2, debt = sum("epf") + sum("ppf") + sum("nps") / 2 + idle;
+    var macro = gmMhMacro(s.macro), w = scWork(), deps = kids + (partner && !two ? 1 : 0);
+    var retAge = mhN(PP.ret, 0, 100) || 60;
+    return { local: local, age: age, horizon: Math.max(0, retAge - age), deps: deps, work: w.me, heads: heads, tier: tier,
+      need: need, lifeHave: lifeHave, lifeGap: lifeGap, termIn: termIn, hHave: hHave, floor: floor, hGap: hGap, stuAmt: stuAmt, cpk: cpk, stu: stu,
+      termGapPrem: lifeGap / cpk * 1000, healthGapPrem: stuAmt / 1000000 * stu, costlyDebt: loans.reduce(function (t, x) { return t + x.bal; }, 0), loans: loans,
+      liquid: liquid, gapM: gapM, bufTarget: target, bufNeed: bufNeed, bufGap: Math.max(0, bufNeed - liquid), buffer: gapM > 0 ? liquid / gapM : null, idle: idle,
+      savBal: Math.max(0, num(PP.sav)), surplus: M && isFinite(M.left) ? Math.max(0, M.left) : 0,
+      irr: bv("irr"), infl: bv("infl"), alt: alt, savRate: bv("sav"), drag: bv("drag"), eq: eq, debt: debt, macro: macro,
+      override: s.alloc.target, alloc: s.alloc, policies: pol, funds: s.funds, today: llIso(llDay(new Date())),
+      benchSet: { irr: mhSet(b.irr), infl: mhSet(b.infl), alt: mhSet(b.alt), cpk: mhSet(b.cpk), stu: mhSet(b.stu), drag: mhSet(b.drag), tier: mhSet(b.tier), floor: mhSet(b.floor) },
+      loc: "en-IN", cur: PP.cur || "INR", askFn: "gmMhAsk" };
+  }
+  window.gmMhCtx = function () { return mhCtx(); };
+
+  // The scan: pure. Each finding names its issue (a REMEDIES id), the rupees a year it frees, the cover it adds and why.
+  window.gmMhScan = function (c) {
+    var out = [], add = function (o) { if (o.where && c.local === false) return; o.freedYear = isFinite(o.freedYear) ? Math.max(0, o.freedYear) : 0;
+      o.coverGain = isFinite(o.coverGain) ? Math.max(0, o.coverGain) : 0; out.push(o); };
+    if (c.need > 0 && c.lifeGap > c.need * 0.1)
+      add({ issue: "life-cover-gap", tier: 1, where: "", title: "Life cover is " + mhShort(c.lifeGap) + " short", coverGain: c.lifeGap, freedYear: 0,
+        line: "You have " + mhShort(c.lifeHave) + " of life cover; your family would need about " + mhShort(c.need) + ". Term cover closes it for about " + mhShort(c.termGapPrem) + " a year.",
+        ctx: { gap: c.lifeGap, prem: c.termGapPrem } });
+    if (c.hGap > 0)
+      add({ issue: "health-below-floor", tier: 1, where: "IN", title: "Health cover is under the floor for " + c.heads + (c.heads === 1 ? " person" : " people"), coverGain: c.stuAmt, freedYear: 0,
+        line: "Your own health cover is " + mhShort(c.hHave) + "; a sensible floor for your family and city is " + mhShort(c.floor) + ". A super top-up is the cheap way up.", ctx: {} });
+    c.policies.forEach(function (p, i) {
+      if (p.st === "applied") return;
+      var pli = p.type === "pli";
+      if (MH_SAVINGS[p.type] && mhN(p.prem) > 0) {
+        var e = gmMhEndow(p, c);
+        if (e.real < 1 || e.cpk < c.cpk / 10)
+          add({ issue: "endow-low-return", tier: 2, where: pli ? "IN" : "", pi: i, title: (pli ? "Postal Life Insurance" : MH_TYPES[p.type][0]) + ": little cover for a large premium",
+            freedYear: mhN(p.prem), coverGain: 0,
+            line: mhRs(e.cpk) + " of cover per ₹1,000 of premium; term buys about " + mhRs(c.cpk) + ". At a typical " + c.irr + "% return it earns about " + (e.real < 0 ? "−" : "") + Math.abs(e.real).toFixed(1) + "% a year after " + c.infl + "% inflation.",
+            ctx: { p: p, e: e } });
+      }
+      if (p.type === "ulip" && mhN(p.prem) > 0 && mhN(p.sa) / mhN(p.prem) * 1000 < c.cpk / 10)
+        add({ issue: "ulip-cover", tier: 2, where: "", pi: i, title: "ULIP: little cover for a large premium", freedYear: 0, coverGain: 0,
+          line: mhRs(mhN(p.sa) / mhN(p.prem) * 1000) + " of cover per ₹1,000 of premium; term buys about " + mhRs(c.cpk) + ".", ctx: { p: p } });
+    });
+    // two personal base health policies that cover the same person: keep the older (its waiting periods are served), fold the newer into a super top-up
+    var hb = c.policies.map(function (p, i) { return { p: p, i: i }; }).filter(function (x) { return x.p.type === "health" && !x.p.emp && x.p.st !== "applied"; });
+    var seen = {};
+    hb.forEach(function (x, j) { hb.slice(j + 1).forEach(function (y) {
+      var mx = MH_MEMBERS[x.p.who] || ["me"], my = MH_MEMBERS[y.p.who] || ["me"]; if (!mx.some(function (m) { return my.indexOf(m) > -1; })) return;
+      var older = (llParse(x.p.start) || 0) <= (llParse(y.p.start) || 0) ? x : y, newer = older === x ? y : x; if (seen[newer.i]) return; seen[newer.i] = 1;
+      var stuCost = mhN(newer.p.sa) / 1000000 * c.stu;
+      add({ issue: "health-overlap", tier: 2, where: "", pi: newer.i, title: "Two health policies cover the same people", freedYear: mhN(newer.p.prem) - stuCost, coverGain: 0,
+        line: "Policies " + (older.i + 1) + " and " + (newer.i + 1) + " overlap. Keeping both buys the same first rupees of cover twice.", ctx: { older: older, newer: newer, stuCost: stuCost } });
+    }); });
+    if (c.idle > Math.max(c.gapM, 1)) {
+      var inSav = Math.min(c.idle, c.savBal);
+      add({ issue: "cash-idle", tier: 2, where: "", title: mhShort(c.idle) + " of cash is above your " + c.bufTarget + "-month buffer", freedYear: inSav * Math.max(0, c.alt - c.savRate) / 100, coverGain: 0,
+        line: "Money above the buffer earns little in a savings account. Let it flow down the plan below.", ctx: { inSav: inSav } });
+    }
+    c.loans.forEach(function (L) {
+      add({ issue: "debt-costly", tier: 2, where: "", title: L.type + " at " + L.rate + "% costs more than your money earns", freedYear: L.bal * (L.rate - c.alt) / 100, coverGain: 0,
+        line: mhRs(L.bal) + " at " + L.rate + "%, against about " + c.alt + "% your money could earn: about " + mhRs(L.bal * (L.rate - c.alt) / 100) + " a year more than it earns.", ctx: { L: L } });
+    });
+    var reg = c.funds.filter(function (f) { return f.plan === "regular" && mhN(f.value) > 0; }), regV = reg.reduce(function (t, f) { return t + mhN(f.value); }, 0);
+    if (regV > 0)
+      add({ issue: "fund-regular", tier: 2, where: "IN", title: reg.length + " fund" + (reg.length === 1 ? " is" : "s are") + " in the regular plan", freedYear: regV * c.drag / 100, coverGain: 0,
+        line: mhRs(regV) + " in regular plans pays about " + c.drag + "% a year more in costs than the direct plan of the same fund.", ctx: { regV: regV, funds: reg } });
+    var al = gmMhAlloc(c);
+    if (al && al.breach && al.cad.due && al.cad.canAct)
+      add({ issue: "alloc-drift", tier: 3, where: "", title: "Your mix is " + Math.abs(Math.round(al.drift)) + " points " + (al.drift > 0 ? "above" : "below") + " its equity target", freedYear: 0, coverGain: 0, moveLine: mhShort(al.move) + " to move back to the target, new money first",
+        line: "Equity is " + Math.round(al.actual) + "% against a target of " + al.t.target + "% (the band is 5 points, or 25% of the target).", ctx: { al: al } });
+    return out.sort(function (x, y) { return x.tier - y.tier || y.freedYear - x.freedYear || y.coverGain - x.coverGain; });
+  };
+  // The mix today against its target, the band and the cadence, and how much would move.
+  window.gmMhAlloc = function (c) {
+    var tot = mhN(c.eq) + mhN(c.debt); if (!(tot > 0)) return null;
+    var t = gmMhTarget({ age: c.age, horizon: c.horizon, deps: c.deps, work: c.work, override: c.override, tilt: c.macro ? c.macro.tilt : 0 }); if (!t) return null;
+    var actual = mhN(c.eq) / tot * 100, d = gmMhDrift(actual, t.target), move = Math.abs(d.drift) / 100 * tot;
+    var months = c.surplus > 0 ? move / c.surplus : Infinity, fromNew = Math.min(move, 6 * mhN(c.surplus)), sw = Math.max(0, move - fromNew);
+    return { actual: actual, t: t, drift: d.drift, rel: d.rel, breach: d.breach, cad: gmMhCadence(c.alloc, c.today), total: tot, move: move, months: months, fromNew: fromNew, switchAmt: sw };
+  };
+
+  // The fixes, in the one REMEDIES engine (no copy): each impact is a pure function of the finding's context.
+  var mhTaxNote = '<span data-where="IN">Tax: ending a life policy in its first two years (five for a ULIP) can add back the deductions you claimed for it, and a payout can be taxable when the premium was high against the sum assured. Cited by topic: check your policy terms and ask your CA.</span>';
+  var mhWhere = "Where to find this: your insurer's app or online account (policy status), the latest premium receipt or bonus statement, or a call to the branch; for PLI, the post office or its customer portal. Ask for today's surrender value and the paid-up value.";
+  function mhHead(fy, cg) { var a = fy > 0 ? mhRs(fy) + " a year freed" : "", b = cg > 0 ? "cover +" + mhShort(cg) : ""; return a && b ? a + " · " + b : a || b; }
+  function mhGuard(c) {
+    var req = c.need > 0 ? c.need : mhN(c.p && c.p.sa);
+    return c.termIn >= req ? "" : "Do not make it paid-up or surrender it yet: first get term cover of " + mhShort(req) + " issued and in force (now " + mhShort(c.termIn) + "), then mark it in force under Your policies. Stopping first leaves the family with less cover, and a new policy needs fresh medical checks: if your health changes, you may not get cover at all.";
+  }
+  var mhTermQuote = function (c) { return "Term cover: what to ask for in a quote\n\n- Cover: " + mhRs(c.gap || c.need) + "\n- Until age 60 to 65 (when the loans and the children's costs are done)\n- Pure term: no return of premium, no investment part\n- Declare every illness and habit honestly; it decides whether a claim is paid\n- Compare the insurer's claim settlement record over three years\n- Nominee named; a copy of the policy where the family can find it"; };
+  Object.assign(REM_LIB, {
+    "term-buy": { title: function (c) { return "Buy term cover of " + mhShort(c.gap) + ""; }, effort: "one form", time: "this month", risk: "low", reversible: true, where: "", hard: true,
+      source: "The term-cover need in this app: 10 years of pay before tax plus the loans (planners say 10 to 15 years); the premium is your editable rough figure of cover per ₹1,000.",
+      preconditions: function (c) { return c.gap > 0; },
+      impact: function (c) { return { rupeesPerMonth: null, freedYear: 0, coverGain: c.gap, headline: "Cover +" + mhShort(c.gap) + " for about " + mhRs(c.prem) + " a year",
+        note: "Pure term: the cheapest way to protect the people who depend on your income.", how: "Gap = need " + mhRs(c.need) + " − cover " + mhRs(c.lifeHave) + ". Premium ≈ gap ÷ " + mhRs(c.cpk) + " × ₹1,000." }; },
+      assumes: function (c) { return c.benchSet.cpk ? [] : [["cpk", mhRs(c.cpk) + " of term cover per ₹1,000 at your age"]]; },
+      doIt: function (c) { return { kind: "copy", label: "Copy what to ask for", text: mhTermQuote(c) }; } },
+    "term-first": { title: function (c) { return "First, put term cover of " + mhShort(c.need > 0 ? c.need : mhN(c.p.sa)) + " in force"; }, effort: "one form", time: "this month", risk: "low", reversible: true, where: "", hard: true,
+      source: "Insurance underwriting: a new policy is priced and accepted on your health on the day you apply, so the old cover stays until the new one is issued.",
+      preconditions: function (c) { return !!c.p && !!mhGuard(c); },
+      impact: function (c) { var g = Math.max(0, (c.need > 0 ? c.need : mhN(c.p.sa)) - c.termIn);
+        return { rupeesPerMonth: null, freedYear: 0, coverGain: g, headline: "Cover +" + mhShort(g) + " for about " + mhRs(g / c.cpk * 1000) + " a year",
+          note: "Then this policy's choices open: keep it, make it paid-up, or surrender it.", how: "Needed in term cover = " + mhRs(c.need > 0 ? c.need : mhN(c.p.sa)) + "; in force now " + mhRs(c.termIn) + "." }; },
+      assumes: function (c) { return c.benchSet.cpk ? [] : [["cpk", mhRs(c.cpk) + " of term cover per ₹1,000 at your age"]]; },
+      doIt: function (c) { return { kind: "copy", label: "Copy what to ask for", text: mhTermQuote(Object.assign({}, c, { gap: Math.max(0, (c.need > 0 ? c.need : mhN(c.p.sa)) - c.termIn) })) }; } },
+    "endow-paidup": { title: "Make it paid-up: stop the premiums, keep a reduced cover", effort: "one form", time: "at the next premium date", risk: "medium: the reduced sum is paid only at maturity", reversible: false, where: "",
+      source: "Traditional life policies: after the minimum premiums, stopping turns the policy paid-up, with a reduced sum assured payable at maturity (the insurer quotes it).",
+      preconditions: function (c) { if (!c.e || !c.p) return false; return c.e.premsLeft > 0 ? (c.e.paidUp === null ? "unknown" : true) : false; },
+      preNote: function () { return "Add the paid-up value under Your policies. " + mhWhere; },
+      guard: function (c) { return mhGuard(c); },
+      impact: function (c) { var e = c.e, gain = e.paidUp !== null && e.cont !== null ? e.paidUp - e.cont : null;
+        return { rupeesPerMonth: gain !== null && gain > 0 && e.years > 0 ? gain / (e.years * 12) : null, freedYear: e.prem, coverGain: 0,
+          headline: mhHead(e.prem, 0) + (gain !== null ? " · " + (gain >= 0 ? mhRs(gain) + " more" : mhRs(-gain) + " less") + " than continuing, at maturity" : ""),
+          note: "Paid-up value " + (c.p.pu ? mhRs(c.p.pu) : "not given") + " at maturity, plus the premiums you stop, invested at " + c.alt + "% for " + e.maturesIn + " years. The cover falls to the paid-up value.",
+          how: "Paid-up = PU + Σ premium × (1 + " + c.alt + "%)^(years each would grow). Continue = " + (e.contFrom === "maturity" ? "the maturity value you gave" : "SV × (1 + " + c.irr + "%)^" + e.maturesIn + " + Σ premium × (1 + " + c.irr + "%)^(years each would grow), an estimate") + ". Your term premium is the same in every option, so it is left out." }; },
+      notes: function (c) { return c.local ? [mhTaxNote] : []; },
+      assumes: function (c) { var a = []; if (!c.benchSet.alt) a.push(["alt", c.alt + "% on money you invest instead"]); if (!c.benchSet.irr && c.e.contFrom !== "maturity") a.push(["irr", c.irr + "% a year inside the policy"]); return a; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a letter to the insurer", text: "Dear Sir or Madam,\n\nPolicy number: (your policy number)\n\nPlease tell me the paid-up value of this policy if I stop paying premiums now, the date it would be paid, and any bonus that stays attached. Please also send today's surrender value.\n\nThank you." }; } },
+    "endow-surrender": { title: "Surrender it and invest the value and the premiums", effort: "one form", time: "after the term cover is in force", risk: "high: hard to undo, and the cover ends", reversible: false, where: "",
+      source: "Traditional life policies: the surrender value the insurer quotes, compared at maturity with continuing.",
+      preconditions: function (c) { if (!c.e || !c.p) return false; return c.e.surrender === null ? "unknown" : true; },
+      preNote: function () { return "Add today's surrender value under Your policies. " + mhWhere; },
+      guard: function (c) { return mhGuard(c); },
+      impact: function (c) { var e = c.e, gain = e.surrender !== null && e.cont !== null ? e.surrender - e.cont : null;
+        return { rupeesPerMonth: gain !== null && gain > 0 && e.years > 0 ? gain / (e.years * 12) : null, freedYear: e.prem, coverGain: 0,
+          headline: mhHead(e.prem, 0) + (gain !== null ? " · " + (gain >= 0 ? mhRs(gain) + " more" : mhRs(-gain) + " less") + " than continuing, at maturity" : ""),
+          note: "Surrender value " + (c.p.sv ? mhRs(c.p.sv) : "not given") + " now, then the plan below. The cover ends, so the term cover must already be in force.",
+          how: "Surrender = SV × (1 + " + c.alt + "%)^" + e.maturesIn + " + Σ premium × (1 + " + c.alt + "%)^(years each would grow), against continuing as for paid-up." }; },
+      notes: function (c) { return c.local ? [mhTaxNote] : []; },
+      assumes: function (c) { return c.benchSet.alt ? [] : [["alt", c.alt + "% on money you invest instead"]]; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a letter to the insurer", text: "Dear Sir or Madam,\n\nPolicy number: (your policy number)\n\nPlease send me today's surrender value of this policy, the paid-up value if I stop paying, and the documents you need for either. I have not decided yet.\n\nThank you." }; } },
+    "endow-continue": { title: "Keep paying to maturity", effort: "one call", time: "no change", risk: "low", reversible: true, where: "",
+      source: "The policy's own maturity value or, when not given, an estimate at a typical return.",
+      preconditions: function (c) { return !!c.e; },
+      impact: function (c) { var e = c.e; return { rupeesPerMonth: null, freedYear: 0, coverGain: 0,
+        headline: e.cont !== null ? "About " + mhRs(e.cont) + " at maturity in " + e.maturesIn + " years" + (e.contFrom === "maturity" ? "" : " (an estimate)") : "Add the surrender or maturity value to compare",
+        note: "Worth it when the paid-up and surrender values are poor, or the policy is near maturity.", how: "Continue = " + (e.contFrom === "maturity" ? "the maturity value you gave" : "SV × (1 + " + c.irr + "%)^years + Σ premium × (1 + " + c.irr + "%)^years") + "." }; },
+      assumes: function (c) { return c.benchSet.irr || c.e.contFrom === "maturity" ? [] : [["irr", c.irr + "% a year inside the policy"]]; } },
+    "ulip-review": { title: "After the 5-year lock-in, compare its charges with a low-cost fund", effort: "one call", time: "after the lock-in", risk: "low", reversible: true, where: "",
+      source: "ULIPs carry premium-allocation, policy-administration, mortality and fund charges; the insurer's annual statement lists them.",
+      preconditions: function (c) { return !!c.p; },
+      impact: function () { return { rupeesPerMonth: null, freedYear: 0, coverGain: 0, note: "Read the charges in the annual statement before deciding. Put the life cover on term first.", how: "No number is assumed." }; } },
+    "health-merge": { title: "At the newer policy's renewal, keep the older one and add a super top-up", effort: "at renewal", time: "at its renewal", risk: "low, if the super top-up is issued first", reversible: false, where: "",
+      source: "Health insurance practice: the older policy has served its waiting periods; a super top-up adds cover above a deductible for less.",
+      preconditions: function (c) { return !!(c.newer && c.newer.p); },
+      impact: function (c) { var fy = mhN(c.newer.p.prem) - c.stuCost;
+        return { rupeesPerMonth: fy > 0 ? fy / 12 : null, freedYear: fy, coverGain: 0, headline: mhHead(fy, 0) + ", the same cover kept",
+          note: "Do not let the newer policy lapse until the super top-up is issued. If it has the better terms (no room-rent cap, restoration), keep it and port the older one into it instead.",
+          how: "Freed = the newer premium " + mhRs(c.newer.p.prem) + " − a super top-up of " + mhRs(c.newer.p.sa) + " at about " + mhRs(c.stu) + " per ₹10 lakh = " + mhRs(c.stuCost) + "." }; },
+      assumes: function (c) { return c.benchSet.stu ? [] : [["stu", mhRs(c.stu) + " a year per ₹10 lakh of super top-up"]]; },
+      doIt: function () { return { kind: "copy", label: "Copy what to ask for", text: "Super top-up: what to ask for in a quote\n\n- Cover above a deductible equal to your base cover\n- No room-rent cap and no disease-wise sub-limits\n- Pre-existing illness waiting period: as short as offered\n- Issued before the policy you drop is allowed to lapse" }; } },
+    "health-stu": { title: function (c) { return "Add a super top-up of " + mhShort(c.stuAmt); }, effort: "one form", time: "this month", risk: "low", reversible: true, where: "IN", hard: true,
+      source: "A floor of ₹5 lakh a person and at least ₹10 lakh for a family in a metro (a planner's rule of thumb, lower in smaller cities); a super top-up pays above a deductible.",
+      preconditions: function (c) { return c.stuAmt > 0; },
+      impact: function (c) { var p = c.healthGapPrem; return { rupeesPerMonth: null, freedYear: 0, coverGain: c.stuAmt, headline: "Cover +" + mhShort(c.stuAmt) + " for about " + mhRs(p) + " a year",
+        note: "Set its deductible at your base cover, so it starts where the base ends.", how: "Floor = max(₹10 lakh, people × ₹5 lakh) in a metro (× 0.75 or 0.5 in smaller cities) = " + mhRs(c.floor) + "; you have " + mhRs(c.hHave) + "; rounded up to ₹5 lakh steps." }; },
+      assumes: function (c) { var a = []; if (!c.benchSet.tier && !c.benchSet.floor) a.push(["tier", "a metro city"]); if (!c.benchSet.stu) a.push(["stu", mhRs(c.stu) + " a year per ₹10 lakh"]); return a; },
+      doIt: function () { return { kind: "copy", label: "Copy what to ask for", text: "Super top-up: what to ask for in a quote\n\n- Cover above a deductible equal to your base cover\n- No room-rent cap and no disease-wise sub-limits\n- Pre-existing illness waiting period: as short as offered\n- The whole family on one floater" }; } },
+    "cash-waterfall": { title: function (c) { return "Move " + mhShort(c.idle) + " down the plan"; }, effort: "one form", time: "this week", risk: "low", reversible: true, where: "",
+      source: "The order this app uses for any freed money: buffer, term cover, health cover, costly debt, then goals.",
+      preconditions: function (c) { return c.idle > 0; },
+      impact: function (c) { var w = gmMhWaterfall(c.idle, c), fy = c.inSav * Math.max(0, c.alt - c.savRate) / 100;
+        return { rupeesPerMonth: fy > 0 ? fy / 12 : null, freedYear: fy, coverGain: 0, headline: mhHead(fy, 0) + " in better returns",
+          note: w.map(function (x) { return x.label + ": " + mhRs(x.amt); }).join(" · "), how: "Above the buffer = savings and FDs " + mhRs(c.liquid) + " − " + c.bufTarget + " × " + mhRs(c.gapM) + ". Gain ≈ the part in savings × (" + c.alt + "% − " + c.savRate + "%)." }; },
+      assumes: function (c) { return c.benchSet.alt ? [] : [["alt", c.alt + "% on money you invest instead"]]; } },
+    "debt-avalanche": { title: function (c) { return "Prepay the " + c.L.type.toLowerCase() + " first"; }, effort: "one form", time: "from the next EMI", risk: "low", reversible: false, where: "",
+      source: "The avalanche method: repay the highest rate first; a rupee repaid saves the loan's full rate, with no tax and no risk.",
+      preconditions: function (c) { if (!c.L) return false; return c.idle > 0 || c.freed > 0 ? true : "unknown"; },
+      preNote: function () { return "No cash above the buffer yet: money freed by the other fixes comes here once the buffer and cover are done."; },
+      guard: function (c) { return c.buffer !== null && c.buffer < 6 ? "Do not prepay from your buffer: it holds " + c.buffer.toFixed(1) + " months, under the 6 to keep first." : ""; },
+      impact: function (c) { var A = Math.min(c.L.bal, c.idle > 0 ? c.idle : c.L.bal), fy = A * c.L.rate / 100;
+        return { rupeesPerMonth: fy / 12, freedYear: fy, coverGain: 0, headline: mhHead(fy, 0) + " of interest", note: "Ask the lender to keep the EMI and shorten the loan.",
+          how: "Interest saved a year ≈ amount repaid " + mhRs(A) + " × " + c.L.rate + "%." }; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a message to the lender", text: "Dear Sir or Madam,\n\nI would like to make a part-prepayment on my " + c.L.type.toLowerCase() + ". Please confirm any charge and send the revised schedule, keeping the EMI the same and shortening the tenure.\n\nThank you." }; } },
+    "fund-direct": { title: "Start new monthly investments in the direct plan; move the old units once their gains are long-term", effort: "one form", time: "from the next monthly investment", risk: "low: the same fund, a lower cost", reversible: true, where: "IN",
+      source: "SEBI requires every fund to offer a direct plan, with no distributor commission and so a lower expense ratio (2013 onwards). Moving units is a sale: capital-gains tax and any exit load apply.",
+      preconditions: function (c) { return c.regV > 0; },
+      impact: function (c) { var fy = c.regV * c.drag / 100;
+        return { rupeesPerMonth: fy / 12, freedYear: fy, coverGain: 0, headline: mhHead(fy, 0) + " in costs",
+          note: "The regular plan pays a distributor for advice. If you value that advice, a fee-only SEBI-registered adviser is the open alternative.",
+          how: "Drag = value in regular plans " + mhRs(c.regV) + " × " + c.drag + "% (the usual gap in expense ratio; your statement shows the real one)." }; },
+      notes: function () { return ['<span data-where="IN">Where to find this: your consolidated account statement (CAMS or KFintech) shows "Direct" or "Regular" in each scheme name.</span>']; },
+      assumes: function (c) { return c.benchSet.drag ? [] : [["drag", c.drag + "% a year of extra cost"]]; } },
+    "alloc-newmoney": { title: function (c) { return "Send new money to " + (c.al.drift > 0 ? "safer funds" : "shares") + (isFinite(c.al.months) ? " for " + remMo(Math.ceil(Math.min(6, c.al.months))) : ""); }, effort: "one form", time: "from this month", risk: "low", reversible: true, where: "",
+      source: "Rebalancing practice: new money first, because it moves the mix with no sale, no tax and no exit load; the 5/25 band decides when to act.",
+      preconditions: function (c) { return !!c.al && c.surplus > 0; },
+      impact: function (c) { var al = c.al; return { rupeesPerMonth: null, freedYear: 0, coverGain: 0, headline: "Moves " + mhRs(al.fromNew) + " of " + mhRs(al.move) + " with no sale",
+        note: "Equity " + Math.round(al.actual) + "% → target " + al.t.target + "%.", how: "Move = |" + Math.round(al.actual) + "% − " + al.t.target + "%| × " + mhRs(al.total) + ". New money = up to 6 months of your surplus " + mhRs(c.surplus) + "." }; },
+      doIt: function () { return { kind: "call", label: "Reviewed: plan noted", js: "gmMhReview(0)" }; } },
+    "alloc-switch": { title: function (c) { return "Switch " + mhShort(c.al.switchAmt || c.al.move) + " from " + (c.al.drift > 0 ? "shares to safer funds" : "safer funds to shares"); }, effort: "one form", time: "at this review", risk: "medium: a sale has tax and exit-load costs", reversible: true, where: "",
+      source: "Rebalancing practice, done at most twice a year; sell the units with the lowest tax and no exit load first.",
+      preconditions: function (c) { return !!c.al && (c.al.switchAmt > 0 || !(c.surplus > 0)); },
+      impact: function (c) { return { rupeesPerMonth: null, freedYear: 0, coverGain: 0, headline: "Brings the mix back to " + c.al.t.target + "% equity", note: "Only what new money cannot move in six months.", how: "Switch = move − 6 × surplus." }; },
+      notes: function (c) { return c.local ? ['<span data-where="IN">Tax: sell units held over 12 months first; long-term gains on equity funds are taxed above a yearly exempt amount, short-term gains at a higher rate, and many equity funds charge about 1% to exit within a year. Cited by topic: check the current rules.</span>'] : []; },
+      doIt: function () { return { kind: "call", label: "I rebalanced", js: "gmMhReview(1)" }; } }
+  });
+  [["life-cover-gap", ["term-buy"]], ["endow-low-return", ["term-first", "endow-paidup", "endow-surrender", "endow-continue"]], ["ulip-cover", ["term-first", "ulip-review"]],
+    ["health-overlap", ["health-merge"]], ["health-below-floor", ["health-stu"]], ["cash-idle", ["cash-waterfall"]], ["debt-costly", ["debt-avalanche"]],
+    ["fund-regular", ["fund-direct"]], ["alloc-drift", ["alloc-newmoney", "alloc-switch"]]].forEach(function (x) { if (x[1].length) REMEDIES[x[0]] = x[1].map(function (id) { return Object.assign({ id: id }, REM_LIB[id]); }); });
+
+  // ── The card ──
+  function mhFixCtx(c, f, k) { return Object.assign({}, c, f.ctx || {}, { key: "mh" + k, freed: 0 }); }
+  function mhItemHTML(c, f, k, open) {
+    var cc = mhFixCtx(c, f, k), R = gmRemedies(f.issue, cc), lead = R.fixes[0], fy = lead && lead.impact ? lead.impact.freedYear || f.freedYear : f.freedYear, cg = f.coverGain;
+    var num_ = mhHead(fy, cg) || f.moveLine || "";
+    return '<div class="gm-mh-item" data-issue="' + esc(f.issue) + '"' + (f.where ? ' data-where="' + esc(f.where) + '"' : "") + ' style="' + (open ? "" : "padding:8px 0;border-top:1px solid var(--border)") + '">'
+      + '<div style="font-weight:800;font-size:' + (open ? "14" : "13") + 'px;overflow-wrap:anywhere">' + esc(f.title) + '</div>'
+      + (num_ ? '<div class="gm-mh-n" style="font-size:12.5px;font-weight:700;margin-top:2px">' + esc(num_) + '</div>' : "")
+      + '<div style="font-size:12.5px;line-height:1.5;margin-top:2px">' + esc(f.line) + '</div>'
+      + (open ? remBlockHTML(f.issue, cc, R) : '<details style="margin-top:4px"><summary style="font-size:12px;cursor:pointer">How to fix it</summary>' + remBlockHTML(f.issue, cc, R) + '</details>') + '</div>';
+  }
+  function mhRowHTML(p, i, local) {
+    var t = MH_TYPES[p.type], isLife = MH_SAVINGS[p.type] || p.type === "ulip", f = function (k, lab, ph, help) {
+      return '<label class="f-label">' + lab + '</label><input ' + (k === "start" ? 'type="date"' : 'inputmode="decimal"') + ' data-mk="p' + i + k + '" value="' + esc(keep0(p[k])) + '" placeholder="' + ph + '" onchange="gmMhSetP(' + i + ',\'' + k + '\',this.value)">' + (help ? '<div style="font-size:11px;color:var(--muted)">' + help + '</div>' : "");
+    };
+    var who = '<label class="f-label">Who it covers</label><select onchange="gmMhSetP(' + i + ',\'who\',this.value)">' + MH_WHO.map(function (w) { return '<option value="' + w[0] + '"' + ((p.who || "me") === w[0] ? " selected" : "") + '>' + w[1] + '</option>'; }).join("") + '</select>';
+    var h = '<details class="gm-mh-row" style="padding:6px 0;border-top:1px solid var(--border)"><summary style="cursor:pointer;font-size:12.5px"><b>' + (i + 1) + '. ' + esc(t[0]) + '</b> · ' + esc(mhShort(mhN(p.sa))) + ' · ' + esc(mhRs(mhN(p.prem))) + ' a year'
+      + (p.ex ? ' <span class="pill pill-t">example</span>' : "") + (p.st === "applied" ? ' · applied' : "") + '</summary>'
+      + who + f("sa", p.type === "health" || p.type === "topup" ? "Sum insured (₹)" : "Sum assured (₹)", "5,00,000") + f("prem", "Yearly premium (₹)", "24,000")
+      + f("start", "Start date", "2019-04-01");
+    if (MH_LIFE[p.type]) h += f("term", "Policy term (years)", "20") + (p.type === "term" ? "" : f("ppt", "Premium-paying term (years)", "same as the term"));
+    if (isLife) h += f("sv", "Surrender value today (₹)", "ask the insurer", "Where to find this: the insurer's app or policy status, or the branch.") + f("pu", "Paid-up value (₹)", "ask the insurer") + f("mv", "Maturity value, if the bond shows one (₹)", "optional");
+    if (p.type === "term") h += '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;margin-top:6px"><input type="checkbox" ' + (p.st === "applied" ? "" : "checked") + ' onchange="gmMhSetP(' + i + ',\'st\',this.checked?\'\':\'applied\')">Issued and in force</label>';
+    if (p.type === "health") h += '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;margin-top:6px"><input type="checkbox" ' + (p.emp ? "checked" : "") + ' onchange="gmMhSetP(' + i + ',\'emp\',this.checked?1:\'\')">From my employer (it ends with the job)</label>';
+    return h + '<button type="button" class="btn-sm" style="margin-top:6px;background:var(--cardAlt);color:var(--text)" onclick="gmMhDel(\'policies\',' + i + ')">Remove</button></details>';
+  }
+  function mhFundHTML(fd, i) {
+    var pb = function (v, lab) { return '<button type="button" class="btn-sm" aria-pressed="' + (fd.plan === v) + '" style="flex:1;background:' + (fd.plan === v ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)") + '" onclick="gmMhSetF(' + i + ',\'plan\',\'' + v + '\')">' + lab + '</button>'; };
+    return '<div class="gm-mh-fund" style="padding:6px 0;border-top:1px solid var(--border)"><label class="f-label">Fund name</label><input value="' + esc(keep0(fd.name)) + '" onchange="gmMhSetF(' + i + ',\'name\',this.value)">'
+      + '<label class="f-label">Value today (₹)</label><input inputmode="decimal" value="' + esc(keep0(fd.value)) + '" onchange="gmMhSetF(' + i + ',\'value\',this.value)">'
+      + '<div style="display:flex;gap:6px;margin-top:6px">' + pb("direct", "Direct") + pb("regular", "Regular") + '</div>'
+      + '<button type="button" class="btn-sm" style="margin-top:6px;background:var(--cardAlt);color:var(--text)" onclick="gmMhDel(\'funds\',' + i + ')">Remove</button></div>';
+  }
+  function mhAllocHTML(c) {
+    var al = gmMhAlloc(c), m = c.macro;
+    var h = '<details class="gm-mh-alloc" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Your mix and its target'
+      + (al ? ' · equity ' + Math.round(al.actual) + '% · target ' + al.t.target + '%' : "") + '</summary><div style="font-size:12px;line-height:1.5;margin-top:4px">';
+    if (!al) h += 'Add your investments in Money (funds, EPF, PPF, NPS) and your date of birth, and the mix and its target show here.';
+    else {
+      h += '<div>' + esc(al.t.how) + '</div><div style="margin-top:4px">Glide path: ' + al.t.glide.map(function (g) { return "age " + g.age + ": " + g.equity + "%"; }).join(" · ") + '.</div>'
+        + '<div style="margin-top:4px">' + (al.breach ? (al.cad.canAct ? (al.cad.due ? "Outside the band: the fix is in the list above." : "Outside the band, and reviewed this quarter. Next look at the next quarterly review.")
+          : "Outside the band, but you have acted twice in 12 months. The next action waits until " + remDate(c, al.cad.nextAct) + ".") : "Inside the band (5 points, or 25% of the target): nothing to do.") + '</div>'
+        + '<div style="margin-top:4px;color:var(--muted)">Equity = funds and stocks + half of NPS. Debt = EPF + PPF + half of NPS + cash above your buffer. Homes and gold are left out.</div>';
+    }
+    var mf = function (k, lab, ph) { return '<label class="f-label">' + lab + '</label><input inputmode="decimal" data-mk="' + k + '" value="' + esc(keep0(mhState().macro[k])) + '" placeholder="' + ph + '" onchange="gmMhMacroSet(\'' + k + '\',this.value)">'; };
+    var at = mhState().macro.at, ago = at && llParse(at) ? Math.round((llDay(new Date()) - llParse(at)) / 86400000) : null;
+    h += '<div style="margin-top:8px;font-weight:700">Your monetary policy committee · once a quarter</div>'
+      + '<div style="color:var(--muted)">' + (ago !== null ? "Updated " + ago + (ago === 1 ? " day" : " days") + " ago. " : "") + 'Type the latest published figures (the RBI repo rate and CPI inflation); they are kept on this device.</div>'
+      + mf("repo", "Repo rate (%)", "the RBI's latest") + mf("cpi", "CPI inflation, year on year (%)", "the latest release")
+      + (m.set ? '<div style="margin-top:4px">' + esc(m.how) + ' Debt duration: ' + esc(m.duration) + '.</div>' : "")
+      + '<label class="f-label">Your own equity target (%), if you prefer one</label><input inputmode="decimal" data-mk="target" value="' + esc(keep0(c.override)) + '" placeholder="worked out for you" onchange="gmMhAllocSet(this.value)">';
+    return h + '</div></details>';
+  }
+  function mhBenchHTML(c) {
+    var s = mhState().bench, f = function (k, lab, ph) { return '<label class="f-label">' + lab + '</label><input inputmode="decimal" data-mk="' + k + '" value="' + esc(keep0(s[k])) + '" placeholder="' + ph + '" onchange="gmMhBench(\'' + k + '\',this.value)">'; };
+    var tb = function (v, lab) { var on = Math.round(c.tier) === v && c.benchSet.tier; return '<button type="button" class="btn-sm" aria-pressed="' + on + '" style="flex:1;background:' + (on ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)") + '" onclick="gmMhBench(\'tier\',' + v + ')">' + lab + '</button>'; };
+    return '<details class="gm-mh-bench" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Assumptions · each has a default you can change</summary>'
+      + (c.local ? '<label class="f-label">Your city</label><div data-mk="tier" style="display:flex;gap:6px">' + tb(1, "Metro") + tb(2, "Tier 2") + tb(3, "Smaller") + '</div>' : "")
+      + f("irr", "Typical return inside an endowment or PLI policy (%)", "5 (planners see 4 to 6)") + f("infl", "Long-run inflation (%)", "6") + f("alt", "What freed money could earn (%)", "7")
+      + f("cpk", "Term cover per ₹1,000 of premium at your age (₹)", mhRs(mhCpkFor(c.age || 35))) + f("stu", "Super top-up premium per ₹10 lakh (₹ a year)", mhRs(mhStuFor(c.age || 35)))
+      + f("drag", "Extra yearly cost of a regular plan (%)", "0.75") + f("floor", "Your own health-cover floor (₹)", mhRs(c.floor)) + '</details>';
+  }
+  /* ── Ready for the big waves (queue horizon-waves, slices 1 and 1b; owner 2026-11-25) ──────────────────────────
+     Four money waves from the World Economic Forum's Global Risks Report 2026, paraphrased, checked against the person's
+     own numbers, then two life waves: scams and false news, and AI changes work. Each is ready, partly ready or not ready
+     yet, with one plain line why, then a step in plain words. Pure code: no network, no AI, nothing stored. */
+  var WAVES = [
+    { id: "slowdown", name: "A slowdown", fixes: ["cash-idle", "debt-costly"] },
+    { id: "prices-rates", name: "Prices and rates", fixes: ["alloc-drift", "debt-costly", "fund-regular"] },
+    { id: "trade-shocks", name: "Trade shifts", fixes: ["alloc-drift"] },
+    { id: "health-weather", name: "Health and weather", fixes: ["health-below-floor", "life-cover-gap"] },
+    { id: "scams", name: "Scams and false news", step: "Rehearse one scam drill (Risk tab)" },
+    { id: "ai-work", name: "AI changes work", step: "Add one learning goal this quarter" }
+  ];
+  var WAVE_LABEL = { ready: "Ready", partly: "Partly ready", not: "Not ready yet" };
+  function wvMonths(b) { return Number(b).toFixed(1).replace(/\.0$/, ""); }
+  // A drill's stamp is a date (YYYY-MM-DD). Anything else is ignored, never turned into a NaN age.
+  function wvDrillAge(stamp) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(stamp || ""));
+    if (!m) return null;
+    var day = new Date(+m[1], +m[2] - 1, +m[3]), now = new Date();
+    return (new Date(now.getFullYear(), now.getMonth(), now.getDate()) - day) / 864e5;
+  }
+  function wvScamReady() {
+    var d = G("gm_threat_drills", {});
+    if (!d || typeof d !== "object" || Array.isArray(d)) return false;
+    return Object.keys(d).some(function (k) { var age = wvDrillAge(d[k]); return age !== null && age >= 0 && age <= 90; });
+  }
+  function wvLearning() {
+    if (typeof S === "undefined" || !S || !Array.isArray(S.okrs)) return false;
+    var re = /learn|skill|course|certif/i;
+    return S.okrs.some(function (o) {
+      if (!o) return false;
+      if (re.test(String(o.o || ""))) return true;
+      return Array.isArray(o.krs) && o.krs.some(function (k) { return k && re.test(String(k.t || "")); });
+    });
+  }
+  function wvWhy(id, c, s) {
+    if (id === "slowdown") {
+      var b = c.buffer;
+      if (b === null || b === undefined || !isFinite(b)) return "Your cash buffer is not set yet; six months of costs is the calm starting point.";
+      if (b >= 6) return "Your cash covers " + wvMonths(b) + " months of costs, past the six-month line.";
+      if (b >= 3) return "Your cash covers " + wvMonths(b) + " months of costs; six months is the calmer line.";
+      return "Your cash covers " + wvMonths(b) + " months of costs, under the three-month line.";
+    }
+    if (id === "prices-rates") {
+      var n = ["alloc-drift", "debt-costly", "fund-regular"].filter(function (k) { return s[k]; }).length;
+      return n ? "Your mix, fund costs or costly debt still have a step to take." : "Your mix is at its target, fund costs are low and no costly debt stands out.";
+    }
+    if (id === "trade-shocks") {
+      return s["alloc-drift"] ? "Your mix is away from its target, the main cushion when trade shifts." : "Your mix is at its target, the main cushion when trade shifts.";
+    }
+    if (id === "scams") {
+      return wvScamReady() ? "You rehearsed a scam drill in the last 90 days, so a false message is less likely to fool you." : "No scam drill yet; one rehearsal a quarter keeps a false message from fooling you.";
+    }
+    if (id === "ai-work") {
+      return wvLearning() ? "One of your goals this quarter is to learn a new skill." : "No learning goal this quarter yet; one new skill keeps your work options open.";
+    }
+    var lg = +c.lifeGap > 0, hg = +c.hGap > 0;
+    if (lg && hg) return "Life cover and health cover are both below their floors.";
+    if (lg) return "Life cover is below the floor for the people who depend on you.";
+    if (hg) return "Health cover is below the floor for your household.";
+    return "Life cover and health cover are at their floors.";
+  }
+  // Pure: the same ctx always gives the same four waves; fixes are the scan's own issues, so nothing unfelt is shown.
+  window.gmWaves = function (c) {
+    c = c || {};
+    var scan = {};
+    try { (window.gmMhScan ? gmMhScan(c) : []).forEach(function (f) { if (f && f.issue) scan[f.issue] = 1; }); } catch (e) {}
+    return WAVES.map(function (w) {
+      var fixes = (w.fixes || []).filter(function (id) { return !!scan[id]; }), st;
+      if (w.id === "slowdown") {
+        var b = c.buffer;
+        st = b === null || b === undefined || !isFinite(b) ? "not" : b >= 6 ? "ready" : b >= 3 ? "partly" : "not";
+      } else if (w.id === "health-weather") {
+        st = +c.hGap > 0 || +c.lifeGap > 0 ? "not" : "ready";
+      } else if (w.id === "scams") {
+        st = wvScamReady() ? "ready" : "not";
+      } else if (w.id === "ai-work") {
+        st = wvLearning() ? "ready" : "not";
+      } else {
+        var n = fixes.length, all = w.fixes.length;
+        st = n === 0 ? "ready" : n >= all ? "not" : "partly";
+      }
+      return { id: w.id, name: w.name, status: st, label: WAVE_LABEL[st], why: wvWhy(w.id, c, scan), fixes: fixes, step: w.step || "" };
+    });
+  };
+  function mhWavesHTML(c) {
+    var W = window.gmWaves(c), rows = {};
+    try { gmMhScan(c).forEach(function (f) { if (f && f.issue) rows[f.issue] = f; }); } catch (e) {}
+    var fixesFor = function (w) {
+      var out = [];
+      w.fixes.forEach(function (issue) {
+        var f = rows[issue]; if (!f) return;
+        var R = gmRemedies(issue, Object.assign({}, c, f.ctx || {}, { freed: 0 })), lead = R.fixes[0];
+        if (lead) out.push(esc(lead.title));
+      });
+      return out;
+    };
+    var h = '<div class="gm-waves" style="margin-top:14px">'
+      + '<div style="font-weight:800;font-size:13px">Ready for the big waves</div>'
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Six world risks, checked against your own numbers. Calm preparation, not a forecast.</div>';
+    W.forEach(function (w) {
+      var fx = fixesFor(w), step = w.step && w.status !== "ready" ? w.step : "";   // a step only when there is something to do
+      h += '<div style="padding:6px 0;border-top:1px solid var(--border);margin-top:4px">'
+        + '<div style="font-size:12.5px"><b>' + esc(w.name) + '</b> <span style="font-size:11px;color:var(--muted)">' + esc(w.label) + '</span></div>'
+        + '<div style="font-size:12px;line-height:1.5;margin-top:1px">' + esc(w.why) + '</div>'
+        + (fx.length ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: ' + fx.join(" · ") + '</div>'
+          : step ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: ' + esc(step) + '</div>' : "") + '</div>';
+    });
+    h += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px">Why these waves</summary>'
+      + '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:3px">The six are the long-running global risks that reach a household\'s money, safety and work. Each is checked only against your own figures, and a money step is offered only where your Money health scan already flags it.<br>Source: World Economic Forum Global Risks Report 2026, paraphrased.</div></details>'
+      + '</div>';
+    return h;
+  }
+  window.gmMoneyHealthHTML = function () {
+    if (!profOK()) return "";
+    var c = mhCtx(), list = gmMhScan(c), s = mhState();
+    // money a guard still holds back (an endowment while term cover is short) is not counted as freed yet
+    var fy = list.reduce(function (t, f) { return t + (f.issue === "endow-low-return" && c.lifeGap > 0 ? 0 : f.freedYear); }, 0), cg = list.reduce(function (t, f) { return t + f.coverGain; }, 0);
+    var h = '<div class="cat-t gm-mh-t" style="margin-top:16px">Money health</div><div class="road-col gm-mh" style="margin:6px 0 12px">'
+      + '<div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">' + (list.length ? list.length + (list.length === 1 ? " thing" : " things") + " to look at, the riskiest first" + (fy > 0 || cg > 0 ? " · " + esc(mhHead(fy, cg)) : "") : "Nothing flagged. Your cover, cash, debt and mix are in shape; the quarterly review keeps them so.") + '</div>';
+    if (list.length) {
+      h += mhItemHTML(c, list[0], 0, true);
+      if (list.length > 1) h += '<details class="gm-mh-later" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Later (' + (list.length - 1) + ')</summary>'
+        + list.slice(1).map(function (f, k) { return mhItemHTML(c, f, k + 1, false); }).join("") + '</details>';
+    }
+    var w = c.surplus > 0 || fy > 0 ? gmMhWaterfall(fy, c) : [];
+    if (w.length) h += '<div class="gm-mh-flow" style="font-size:12px;line-height:1.5;margin-top:8px"><b>Where freed money goes, in order:</b> ' + w.map(function (x) { return esc(x.label) + " " + esc(mhRs(x.amt)); }).join(" → ") + '</div>';
+    h += mhWavesHTML(c);
+    h += mhAllocHTML(c);
+    var types = Object.keys(MH_TYPES).filter(function (k) { return !MH_TYPES[k][1] || c.local; });
+    h += '<details class="gm-mh-reg" style="margin-top:8px"' + (s.policies.length ? "" : " open") + '><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Your policies (' + s.policies.length + ') and funds (' + s.funds.length + ')' + (s.policies.length ? " · change" : "") + '</summary>'
+      + (s.policies.length ? "" : '<div style="font-size:12px;color:var(--muted);margin-top:4px">Add each life and health policy once: tap its kind, then correct the example numbers.</div>')
+      + s.policies.map(function (p, i) { return mhRowHTML(p, i, c.local); }).join("")
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + types.map(function (k) { return '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmMhAdd(\'' + k + '\')">+ ' + esc(MH_TYPES[k][0]) + '</button>'; }).join("") + '</div>'
+      + (c.local ? '<div style="font-size:12.5px;font-weight:700;margin-top:10px">Mutual funds: direct or regular?</div>' + s.funds.map(mhFundHTML).join("")
+        + '<button type="button" class="btn-sm" style="margin-top:6px;background:var(--cardAlt);color:var(--text)" onclick="gmMhAddFund()">+ A fund</button>' : "") + '</details>';
+    h += mhBenchHTML(c)
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px"><button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'mhealth\')">Add the quarterly review to calendar</button></div>'
+      + '<div class="gm-mh-edu" style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:8px">Education, not advice: your decision. These are general rules worked out on your own numbers by code, with no AI; for a recommendation on a product, ask a SEBI-registered investment adviser. Everything stays on this device.</div>';
+    return h + '</div>';
+  };
+  // Writes: each one saves, re-renders and says what changed.
+  var MH_EX = { term: { sa: 10000000, prem: 14000, term: 25, who: "me" }, endow: { sa: 500000, prem: 30000, term: 20, ppt: 20, who: "me" }, whole: { sa: 500000, prem: 25000, term: 40, ppt: 20, who: "me" },
+    pli: { sa: 500000, prem: 24000, term: 20, ppt: 20, who: "me" }, ulip: { sa: 500000, prem: 50000, term: 10, ppt: 5, who: "me" }, health: { sa: 500000, prem: 18000, who: "family" }, topup: { sa: 2500000, prem: 4000, who: "family" } };
+  function mhSave(s, msg) { mhPut(s); if (typeof renderAll === "function") renderAll(); if (msg && typeof gmToast === "function") gmToast(msg); }
+  window.gmMhAdd = function (type) {
+    if (!MH_TYPES[type]) return; var s = mhState(), y = new Date().getFullYear();
+    s.policies.push(Object.assign({ type: type, start: (y - 3) + "-04-01", ex: 1 }, MH_EX[type], type === "term" ? { st: "applied" } : {}));
+    mhSave(s, "Added an example " + MH_TYPES[type][0].toLowerCase() + " policy. Open it under Your policies and correct the numbers.");
+  };
+  window.gmMhSetP = function (i, k, v) {
+    var s = mhState(), p = s.policies[i]; if (!p || ["who", "sa", "prem", "start", "term", "ppt", "sv", "pu", "mv", "st", "emp"].indexOf(k) < 0) return;
+    if (k === "who") p.who = MH_MEMBERS[v] ? v : "me"; else if (k === "start") p.start = llParse(v) ? llIso(llParse(v)) : ""; else if (k === "st") p.st = v === "applied" ? "applied" : "";
+    else if (k === "emp") p.emp = v ? 1 : ""; else p[k] = mhSet(v) ? mhN(v, 0, 1e11) : "";
+    delete p.ex; mhSave(s, "Saved.");
+  };
+  window.gmMhDel = function (kind, i) { var s = mhState(); if (!Array.isArray(s[kind]) || !s[kind][i]) return; s[kind].splice(i, 1); mhSave(s, "Removed."); };
+  window.gmMhAddFund = function () { var s = mhState(); s.funds.push({ name: "", value: "", plan: "" }); mhSave(s, ""); };
+  window.gmMhSetF = function (i, k, v) {
+    var s = mhState(), f = s.funds[i]; if (!f || ["name", "value", "plan"].indexOf(k) < 0) return;
+    f[k] = k === "plan" ? (v === "direct" || v === "regular" ? v : "") : k === "value" ? (mhSet(v) ? mhN(v, 0, 1e11) : "") : String(v).slice(0, 80); mhSave(s, "Saved.");
+  };
+  window.gmMhBench = function (k, v) {
+    if (["irr", "infl", "alt", "sav", "drag", "cpk", "stu", "floor", "tier"].indexOf(k) < 0) return;
+    var s = mhState(), lim = { irr: 30, infl: 30, alt: 30, sav: 30, drag: 5, tier: 3 }[k] || 1e11; s.bench[k] = mhSet(v) ? mhN(v, 0, lim) : ""; mhSave(s, "Saved: the review is worked out again.");
+  };
+  window.gmMhMacroSet = function (k, v) {
+    if (k !== "repo" && k !== "cpi") return; var s = mhState(); s.macro[k] = mhSet(v) ? mhN(v, 0, 30) : ""; s.macro.at = llIso(llDay(new Date())); mhSave(s, "Saved for this quarter.");
+  };
+  window.gmMhAllocSet = function (v) { var s = mhState(); s.alloc.target = mhSet(v) ? mhN(v, 0, 100) : ""; mhSave(s, "Saved: your own target."); };
+  window.gmMhReview = function (acted) {
+    var s = mhState(), t = llIso(llDay(new Date())); s.alloc.reviews.push(t); if (acted) s.alloc.acts.push(t);
+    s.alloc.reviews = s.alloc.reviews.slice(-12); s.alloc.acts = s.alloc.acts.slice(-12);
+    mhSave(s, acted ? "Recorded. The next rebalance waits for the band and the cadence." : "Reviewed for this quarter. Nothing more until the next review.");
+  };
+  window.gmMhAsk = function (k) {
+    var box = document.querySelector(".gm-mh-bench"); if (k === "target") box = document.querySelector(".gm-mh-alloc"); if (!box) return;
+    box.open = true; var el = box.querySelector('[data-mk="' + k + '"]'); if (!el) return;
+    try { el.scrollIntoView({ block: "center" }); } catch (e) {}
+    var t = el.matches && el.matches("input") ? el : el.querySelector("button, input"); if (t) try { t.focus(); } catch (e) {}
+  };
+  // The Money tab shows it, after the numbers and the checks, before the waterfall's steps.
+  if (typeof renderMoney === "function") { var _rmMh = renderMoney; renderMoney = function (E) {
+    var h = _rmMh(E), k = h.indexOf('<div class="pd-step'), card = gmMoneyHealthHTML();
+    return k > -1 ? h.slice(0, k) + card + h.slice(k) : h + card;
+  }; }
+
+  // Which issue a weak measure belongs to, so a red number never stands alone
+  var REM_KPI = { "Rent-to-EMI cover": "dscr-low", "Monthly cash flow": "dscr-low", "Break-even occupancy": "beocc-high", "Debt-to-rental-income": "debt-heavy",
+    "Loan-to-value": "debt-heavy", "Net rental yield": "yield-thin", "Gross rental yield": "yield-thin", "Price-to-rent": "yield-thin" };
   function fmtL(x) { return "\u20b9" + (Math.round(x / 1000) / 100).toFixed(2) + "L"; }
   /* ── The landlord desk (owner, 2026-11-15; queue landlord-desk) ──────────────────────────────────────────────────────
      For each let-out home, what is due next: rent, maintenance, property tax, the renewal two months ahead, registration
@@ -2329,6 +3254,14 @@
   function llNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s₹]/g, "")); return isFinite(n) ? n : 0; }
   function llShow(d) { return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }   // 4 Jan 2026, never an ISO string
   function llBadge(cls, word) { return '<span class="' + cls + '" style="font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff") + '">' + esc(word) + '</span>'; }
+  /* A stored name tidied for showing, never for saving (owner, 2026-11-24): "101_SunriseCHS_Testville" reads "101 Sunrise CHS, Testville".
+     Underscores become spaces, a lower-to-upper join gets a space, runs of spaces collapse, and the last part after two or more
+     separators reads as the place. The stored value is never changed. */
+  window.gmTidyName = function (n) {
+    var parts = String(n === undefined || n === null ? "" : n).split("_").map(function (x) { return x.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\s+/g, " ").trim(); }).filter(Boolean);
+    if (parts.length >= 3) { var place = parts.pop(); return parts.join(" ") + ", " + place; }
+    return parts.join(" ");
+  };
   function llMH() { var f = G("gm_facts", {}) || {}; return f.state === "MH"; }
   /* Coming up in your world (immersive-real, owner 2026-11-23): the next real events, worked out from what the person already
      told us, with nothing to type: birthdays of the people at home, a loan's last EMI, a let-out home's rent, tax, renewal and
@@ -2382,9 +3315,20 @@
       var d = new Date(t0.getFullYear(), t0.getMonth() + m, t0.getDate());
       out.push({ d: d, kind: "loan", t: esc(x.type || "Loan " + (i + 1)) + ": last EMI", s: rs(num(x.emi)) + " a month frees up after it. Decide now where it goes." });
     });
-    props().forEach(function (p) {
+    props().forEach(function (p, pi) {
       if (!p || (p.use || "letout") !== "letout") return;
-      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(p.n || "Your flat") + ": " + esc(r.t), s: "Mark it done on the Property tab." }); });
+      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(gmTidyName(p.n) || "Your flat") + ": " + esc(r.t), s: "", pi: pi, id: r.id, act: r.act, key: r.key || "", btn: r.btn }); });
+    });
+    // Policy premiums and maturities from the Money health register (due-list-feed): one list, no second reminders screen.
+    mhState().policies.forEach(function (p) {
+      if (!p || p.st === "applied") return;   // applied for is not in force yet
+      var st = llParse(p.start); if (!st || st > t0) return;
+      var prem = num(p.prem), term = num(p.term), ppt = num(p.ppt);
+      var nx = new Date(t0.getFullYear(), st.getMonth(), st.getDate()); if (nx < t0) nx = new Date(t0.getFullYear() + 1, st.getMonth(), st.getDate());
+      var yrs = nx.getFullYear() - st.getFullYear(), payEnd = ppt > 0 ? ppt : term > 0 ? term : Infinity;
+      if (prem > 0 && yrs < payEnd) out.push({ d: nx, kind: "policy", t: "Premium due: " + (MH_DUE[p.type] || (MH_TYPES[p.type] || ["Policy"])[0]), s: rs(prem) + " · Pay from the buffer, not a card" });
+      var mat = new Date(st.getFullYear() + term, st.getMonth(), st.getDate());
+      if (term > 0 && mat >= t0 && (MH_SAVINGS[p.type] || p.type === "ulip")) out.push({ d: mat, kind: "policy", t: "Matures", s: "The policy pays out. Decide where it goes." });
     });
     out.push({ d: new Date(t0.getFullYear(), t0.getMonth() + 1, 1), kind: "checkin", t: "Month-end money check-in", s: "One balance each. Two minutes." });
     return out.map(function (x) { x.days = days(x.d); return x; }).filter(function (x) { return x.days <= 45; })
@@ -2393,17 +3337,21 @@
   window.gmComingUpHTML = function () {
     var L = window.gmComingUp ? gmComingUp() : []; if (!window.P || P.example) return "";
     var moon = function (n) { return SXWorld.moon(n); };   // the shared moon (shared/world.js): waxes as the day comes near
-    var when = function (n) { return n < 0 ? (-n) + (n === -1 ? " day late" : " days late") : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
+    // a slip is named once and kindly: "Still open", never a count of days late
+    var when = function (n) { return n < 0 ? "Still open" : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
     var date = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
-    var row = function (x) {
-      var st = x.days < 0 || x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+    var done = function (x, cls, txt) { return '<button type="button" class="' + cls + '" onclick="gmLlDone(' + x.pi + ',\'' + x.act + '\',\'' + esc(x.key) + '\')">' + txt + '</button>'; };
+    var row = function (x, inView) {
+      var st = x.days < 0 ? "watch" : x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+      var small = x.days < 0 ? "since " + date(x.d) : date(x.d), paper = x.id === "police" || x.id === "registration";
+      var act = inView && x.act ? '<div class="gm-cu-act">' + done(x, "btn-sm gm-cu-done", esc(x.btn || "Done")) + (paper ? done(x, "gm-cu-already", "Already done") : "") + '</div>' : "";
       return '<div class="gm-cu-row" role="listitem" aria-label="' + x.t.replace(/<[^>]+>/g, "") + ', ' + when(x.days) + '">' + moon(x.days)
-        + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">' + x.t + '</div><div style="font-size:12.5px;color:var(--muted)">' + x.s + '</div></div>'
-        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + date(x.d) + '</small></div></div>';
+        + '<div style="flex:1;min-width:0"><div class="gm-cu-t" style="font-weight:700;font-size:14px;overflow-wrap:anywhere">' + x.t + '</div>' + (x.s ? '<div style="font-size:12.5px;color:var(--muted);overflow-wrap:anywhere">' + x.s + '</div>' : "") + act + '</div>'
+        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + small + '</small></div></div>';
     };
     return '<div class="road-col gm-cu" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px;margin-bottom:4px">Coming up in your world</div><div role="list">'
-      + L.slice(0, 3).map(row).join("") + '</div>'
-      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
+      + L.slice(0, 1).map(function (x) { return row(x, true); }).join("") + '</div>'
+      + (L.length > 1 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 1) + ')</summary><div role="list">' + L.slice(1).map(function (x) { return row(x, false); }).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
   };
   function llRows(p) {
     var today = llDay(new Date()), rows = [], ym = llIso(today).slice(0, 7), mon = today.toLocaleString("en-IN", { month: "long" });
@@ -2528,11 +3476,13 @@
   window.gmLlDone = function (i, act, key) {
     var p = props(), x = p[i]; if (!x) return;
     var today = llIso(new Date());
+    try { if (typeof gmSnap === "function") gmSnap("marked a home paper done"); } catch (e) {}   // one tap, so one Undo
     if (act === "paid" || act === "mpaid") { x[act] = (x[act] && typeof x[act] === "object") ? x[act] : {}; x[act][key] = true; }
     else if (act === "tax") { var t = llParse(x.taxDue); if (t) x.taxDue = llIso(llAddMonths(t, 12)); }
     else if (act === "renew") { var st = llParse(x.start); if (st) { x.start = llIso(llAddMonths(st, llNum(x.months) || 11)); x.registered = ""; x.police = ""; } }
     else if (act === "registered" || act === "police") x[act] = today;
     S_("gm_props", p); renderAll();
+    if (typeof gmToast === "function") gmToast("Done" + (x.n ? ": " + gmTidyName(x.n) : "") + ". You can undo this from Today.");
   };
   window.gmLlCopy = function (id) {
     var el = document.getElementById(id), tx = el ? el.value : "";
@@ -2542,15 +3492,20 @@
   function landlordSummary(P) {
     var let_ = P.filter(function (p) { return (p.use || "letout") === "letout"; }), first = null;
     if (!let_.length) return "";
-    let_.forEach(function (p) { var r = llRows(p)[0]; if (r && (!first || r.days < first.days)) first = r; });
+    let_.forEach(function (p) {
+      var r = llRows(p).filter(function (x) { return x.id !== "police" && x.id !== "registration"; })[0];   // papers are shown once, in "Next for this home"
+      if (r && (!first || r.days < first.days)) first = r;
+    });
     return '<div class="road-col gm-ll-sum" style="margin-bottom:10px;font-size:13px">' + let_.length + " home" + (let_.length > 1 ? "s" : "") + " let"
       + (first ? " · next: <b>" + esc(first.t) + '</b> <span style="white-space:nowrap">' + esc(llShow(first.d)) + "</span>" + (first.days < 0 ? " " + llBadge("sx-state-low", "overdue") : first.days <= 7 ? " " + llBadge("sx-state-watch", "due soon") : "") : " · nothing due") + '</div>';
   }
   function propHTML() {
     var P = props();
     var h = '<div class="section active"><div class="cat-t">\u{1F3E0} Property economics</div>'
-      + '<div class="info">Seven numbers per flat. Everything else is calculated. '
-      + 'The question a let-out property has to answer is not \u201chas the price gone up\u201d \u2014 it is whether the rent, after every cost and after tax, beats what the same money would do sitting in an index fund.</div>';
+      // kaizen-1: the outcome in one line, the reasoning one tap away (no wall of text above the fold)
+      + '<div class="gm-prop-lede" style="font-size:13.5px;margin:0 0 8px">Does the rent beat an index fund? Seven numbers per flat answer it.</div>'
+      + '<details class="gm-why" style="margin:0 0 10px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Why this question?</summary><div class="info" style="margin-top:6px">Seven numbers per flat. Everything else is calculated. '
+      + 'The question a let-out property has to answer is not \u201chas the price gone up\u201d \u2014 it is whether the rent, after every cost and after tax, beats what the same money would do sitting in an index fund.</div></details>';
     h += landlordSummary(P);
     if (!P.length) h += '<div class="info">Nothing added yet. Start from the worked example and overwrite the numbers \u2014 correcting something wrong is far quicker than filling something blank.</div>'
       + tplBtn("gmTplProp()", "Start from a worked example");
@@ -2568,7 +3523,7 @@
       ["out", "Annual outgo \u2014 society + property tax + repairs (\u20b9)", "48000"],
       ["vac", "Vacant months per year (realistic, not hoped-for)", "1"]];
       h += '<details class="road-col" style="margin-bottom:12px" ' + (i === 0 ? "open" : "") + '>'
-        + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + esc(p.n || "Property")
+        + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px;overflow-wrap:anywhere">' + esc(gmTidyName(p.n) || "Property")
         + (p.use === "rented" ? '<span style="float:right;color:var(--muted);font-weight:600">we rent it</span></summary>'
         : '<span style="float:right;color:' + (r.cashflow >= 0 ? "var(--green)" : "var(--amber)") + '">'
         + (r.cashflow >= 0 ? "+" : "") + Math.round(r.cashflow).toLocaleString("en-IN") + "/mo</span></summary>");
@@ -2579,12 +3534,17 @@
           + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:8px" onclick="gmPropDel(' + i + ')">Remove this property</button></div></details>';
         return;
       }
+      // kaizen-1, number first: once the value and the rent are in, the verdict leads and the eight inputs fold under one line
+      var filledP = !!(num(p.val) && num(p.rent)), hTop = h, inputs = "";
+      h = "";
       h += ownerHTML(p, i);
       if ((p.use || "letout") === "letout") h += papersCardHTML(p) + landlordHTML(p, i);
+      var hMid = h; h = "";
       F.forEach(function (f) {
-        h += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
+        inputs += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
           + ' value="' + esc(keep0(p[f[0]])) + '" placeholder="e.g. ' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
       });
+      if ((p.use || "letout") === "letout") inputs += remInputsHTML(p, i);
       if (num(p.val) && num(p.rent)) {
         var noEmi = !num(p.emi) && !r.emiFrom, owes = noEmi && (num(p.loan) > 0 || (window.P && P.loans || []).some(function (x) { return x && /home/i.test(String(x.type || "")) && num(x.remaining) > 0; }));
         var rows = [
@@ -2612,7 +3572,9 @@
           "Break-even occupancy": r.beOcc <= 70 ? "g" : r.beOcc <= 90 ? "a" : "r",
           "Monthly cash flow": r.cashflow >= 0 ? "g" : r.cashflow >= -5000 ? "a" : "r"
         };
-        var WORD = { g: "Strong", a: "Watch", r: "Weak" };
+        var WORD = { g: "Fine", a: "Watch", r: "Needs attention" };   // plain-first (owner 2026-11-25): never "Weak" in red capitals
+        var rc = remCtx(p, i), remCache = {}, remOf = function (id) { return remCache[id] || (remCache[id] = gmRemedies(id, rc)); };
+        rc.plain = true;   // plain-first: a fix shows its rupees by default; the ratio's move sits under How we worked this out
         // The target behind each verdict (owner, 2026-11-20): the word alone says nothing about what "strong" means.
         var AIM = {
           "Gross rental yield": "aim 4% or more",
@@ -2640,32 +3602,57 @@
             + (vd ? '<div class="gm-vw gm-v-' + vd + '">' + WORD[vd] + '</div>' : "")
             + (vd && AIM[x[0]] ? '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">' + AIM[x[0]] + '</div>' : "") + '</div></div>';
         };
-        h += '<div style="margin-top:12px">';
-        rows.slice(0, 3).forEach(function (x) { h += metricRow(x); });
-        h += '</div>';
-        if (rows.length > 3) {
-          h += '<details class="gm-later"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + (rows.length - 3) + ')</summary><div>';
-          rows.slice(3).forEach(function (x) { h += metricRow(x); });
-          h += '</div></details>';
-        }
-        h += '<div style="margin-top:10px">';
-        v.forEach(function (x) {
-          h += '<div style="border-left:3px solid ' + x[1] + ';padding:6px 0 6px 9px;margin-bottom:7px">'
-            + '<div style="font-size:12.5px;font-weight:800;color:' + x[1] + '">' + x[0] + '</div>'
-            + '<div style="font-size:11.5px;color:var(--text);line-height:1.6">' + x[2] + '</div></div>';
-        });
-        h += '</div>';
+        /* Plain first (owner, 2026-11-25): one card per problem. Its headline is a sentence from the person's own numbers, its
+           state a calm word, its best fix one button, the others under More ways (n); the ratio, its name, formula, aim and
+           source, and the measures it was judged by, all sit under "How we worked this out". The first problem is in view
+           (one open action); the rest wait under Later (n) with the measures that are fine. */
+        var ORDER = ["dscr-low", "beocc-high", "debt-heavy", "yield-thin", "setoff-cap"], probs = [], fines = [], have = {};
+        v.forEach(function (x) { if (!x[3]) fines.push(x); else if (!have[x[3]]) { have[x[3]] = 1; probs.push({ id: x[3], x: x }); } });
+        rows.forEach(function (x) { var id = REM_KPI[x[0]]; if (VERDICT[x[0]] === "r" && id && !have[id]) { have[id] = 1; probs.push({ id: id, x: null }); } });   // a weak measure with no card of its own still gets one
+        probs.sort(function (p1, q1) { return ORDER.indexOf(p1.id) - ORDER.indexOf(q1.id); });
+        var netIn = window.P && num(P.net) ? num(P.net) : 0, cost = plCost(r), emerg = netIn > 0 && cost > netIn * 0.5, usedRow = {}, led = {};
+        var rowOf = function (nm) { return rows.filter(function (y) { return y[0] === nm; })[0]; };
+        var cardHTML = function (pb) {
+          var id = pb.id, fine = !id, red = emerg && (id === "dscr-low" || id === "beocc-high"), col = fine ? "var(--green)" : red ? "var(--red)" : "var(--amber)";
+          var head = fine ? pb.x[0] : plHead(id, r, rc), t = PL_TECH[id], fold = "";
+          if (!fine) {
+            var mine = (t ? t.rows : []).map(rowOf).filter(Boolean);
+            mine.forEach(function (y) { usedRow[y[0]] = 1; });
+            fold = '<details class="gm-pf-how" style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">How we worked this out</summary>'
+              + '<div style="margin-top:4px">' + plTechHTML(id, r, pb.x, esc) + mine.map(metricRow).join("") + '</div></details>';
+          }
+          return '<div class="gm-issue gm-pf" data-issue="' + esc(id) + '" style="border-left:3px solid ' + col + ';padding:8px 0 8px 10px;margin-bottom:9px">'
+            + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">'
+            + '<div class="gm-pf-head" style="flex:1 1 200px;min-width:0;overflow-wrap:anywhere;font-size:14px;font-weight:800;line-height:1.4;color:var(--text)">' + esc(head) + '</div>'
+            + '<span class="gm-pf-state" style="font-size:11.5px;font-weight:700;color:var(--text);white-space:nowrap"><span aria-hidden="true" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + col + ';margin-inline-end:5px"></span>' + (fine ? "Fine" : "Needs attention") + '</span></div>'
+            + (fine ? '<div style="font-size:11.5px;color:var(--text);line-height:1.6;margin-top:3px">' + pb.x[2] + '</div>' : remBlockHTML(id, rc, remOf(id), led) + fold) + '</div>';
+        };
+        // the one line on top: what this flat costs a month, and the best next step
+        var lead = null; probs.some(function (pb) { if (pb.id === "setoff-cap" || pb.id === "papers-open") return false; lead = remOf(pb.id).fixes.filter(function (f) { return !f.foldOnly && !f.hard && !f.question; })[0] || null; return !!lead; });
+        var VERB = { "rate-reset": "saves", "prepay": "saves", "rent-renewal": "adds" }, rsP = function (n) { return remRs(rc, n); }, rpm = lead && lead.impact && lead.impact.rupeesPerMonth > 0 ? lead.impact.rupeesPerMonth : 0;
+        var left = r.rentM * (12 - r.vacM) / 12 - r.emiAmt - r.outA / 12;
+        var sum = owes ? "Add this loan's EMI under Loans, to see what the flat really costs you."
+          : cost > 0 ? "This flat costs you " + rsP(plRound(cost)) + " a month." + (lead ? " Best next step: " + lead.title.charAt(0).toLowerCase() + lead.title.slice(1) + (rpm ? " (" + (VERB[lead.id] || "is worth") + " about " + rsP(rpm) + " a month)" : "") + "." : "")
+          : "This flat pays for itself" + (left > 0 ? ": about " + rsP(plRound(left)) + " a month is left after the loan and costs." : ".");
+        h += '<div class="gm-pf-sum" style="margin:12px 0 8px;font-size:13.5px;font-weight:700;line-height:1.5;color:var(--text);overflow-wrap:anywhere">' + esc(sum) + '</div>';
+        var later = [];
+        if (probs.length) { h += cardHTML(probs[0]); probs.slice(1).forEach(function (pb) { later.push(cardHTML(pb)); }); fines.forEach(function (x) { later.push(cardHTML({ id: "", x: x })); }); }
+        else fines.forEach(function (x) { h += cardHTML({ id: "", x: x }); });
+        rows.forEach(function (x) { if (!usedRow[x[0]]) later.push(metricRow(x)); });
+        if (later.length) h += '<details class="gm-later"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + later.length + ')</summary><div>' + later.join("") + '</div></details>';
       }
+      h = filledP ? hTop + h + hMid + '<details class="road-col gm-prop-nums" data-pi="' + i + '" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:13px">The numbers (' + F.length + ') <span style="font-weight:500;color:var(--muted)">\u00b7 tap to edit</span></summary>' + inputs + '</details>'
+        : hTop + hMid + inputs + h;
       h += '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:8px" onclick="gmPropDel(' + i + ')">Remove this property</button>';
       h += '</div></details>';
     });
     h += '<button class="btn btn-p" onclick="gmPropAdd()">Add a property</button>';
-    h += '<div class="cat-t" style="margin-top:18px">\u{1F4CC} The correction worth knowing</div>'
+    h += '<details class="gm-why" style="margin-top:18px"><summary class="cat-t" style="cursor:pointer">\u{1F4CC} The correction worth knowing <span style="font-size:12px;font-weight:500;color:var(--muted)">\u00b7 the salary set-off is capped at \u20b92 lakh</span></summary>'
       + '<div class="info">Your playbook records the let-out interest deduction as \u201cuncapped, therefore effective rate ~5%\u201d. Half of that is right. '
       + 'The <b>deduction</b> is uncapped for a let-out property \u2014 but the resulting <b>loss you can set off against salary</b> is capped at \u20b92 lakh a year under section 71(3A), '
       + 'with the excess carried forward eight years and usable only against future house-property income. Under the new regime that inter-head set-off is nil. '
       + 'So the effective-rate maths above holds only while your annual loss stays under \u20b92L and you remain in the old regime. '
-      + 'The calculator now shows you the moment you cross that line. Worth putting to your CA alongside the clubbing question.</div>';
+      + 'The calculator now shows you the moment you cross that line. Worth putting to your CA alongside the clubbing question.</div></details>';
     h += '<div class="cat-t" style="margin-top:14px">Annual rent discipline</div><div class="road-col">'
       + '<div class="road-i">Benchmark against three live listings for a comparable flat, every August. Rent that never rises is a slow, silent pay cut.</div>'
       + '<div class="road-i">A written 11-month agreement, registered, with a clear escalation clause. Verbal comfort is not a contract.</div>'
@@ -2889,9 +3876,11 @@
         // human-first: example numbers are not the person's, and Today before any tick is never guilt; an unknown value is a
         // calm dash, never "low". Today turns from watch (building) to good (strong) only when all three are done.
         if (v.l === "Today") st = v.v === "3/3" ? "good" : v.v === "0/3" ? "" : "watch";
+        // kaizen-1: a foundation stack nobody has started is an invitation, not an alarm (no red for 'not begun')
+        else if (v.l === "Stack" && v.v === "0%") st = "";
         else st = v.c === "var(--green)" ? "good" : v.c === "var(--amber)" ? "watch" : v.c === "var(--red)" ? "low" : "";
       }
-      var word = st ? STATE_WORD[st] : (exampleNums && !empty && v.deps ? "example" : "");   // say why a tile has no colour
+      var word = st ? STATE_WORD[st] : (exampleNums && !empty && v.deps ? "example" : v.l === "Stack" && v.v === "0%" && !exampleNums ? "start" : "");   // say why a tile has no colour
       h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (word ? " (" + word + ")" : "") + '. Open the tab that changes this."'
         + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"'
         + (st ? ' class="sx-state-' + st + '" data-state="' + st + '"' : "") + '>'
@@ -3737,10 +4726,11 @@
   function bkAdopt() { var e = G(BK_ESC, null); if (!G(BK_PH, null) && typeof e === "string" && e.replace(/[^A-Z0-9]/gi, "").length >= 8) S_(BK_PH, e); }
   window.gmBkAdopt = bkAdopt;
   function bkEscrow(p) { var c = G("gm_sync_cfg", null); if (c && c.url && c.user && p && G(BK_ESC, null) !== p) S_(BK_ESC, p); }
-  function bkNewPhrase() {
-    var r = crypto.getRandomValues(new Uint8Array(20)), t = "";
-    for (var i = 0; i < 20; i++) t += BK_ABC[r[i] % 32] + (i % 4 === 3 && i < 19 ? "-" : "");
-    return t;                                                          // 20 symbols of 32: 100 bits
+  function bkNewPhrase(n) {
+    n = n || 20;
+    var r = crypto.getRandomValues(new Uint8Array(n)), t = "";
+    for (var i = 0; i < n; i++) t += BK_ABC[r[i] % 32] + (i % 4 === 3 && i < n - 1 ? "-" : "");
+    return t;                                                          // 5 bits a symbol (32 divides 256, so no bias): 20 symbols, 100 bits
   }
   function bkNorm(p) { return String(p || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
   window.gmBackupSeal = function (blob, phrase) {
@@ -3754,27 +4744,15 @@
   };
   function bkSave(text, enc) {
     var name = "life-os-backup-" + ymd() + (enc ? "-encrypted" : "") + ".json";
-    function download() {
-      var a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-      a.download = name;
-      a.click();
-      // a file on a wide screen (a laptop) is already off the phone; a phone download is not
-      if (enc && !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches)) S_("gm_last_offsite", ymd());
+    function saved(how) {
+      // a shared file, or a file on a wide screen (a laptop), is already off the phone; a phone download is not
+      if (enc && (how === "shared" || !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches))) S_("gm_last_offsite", ymd());
       S_("gm_last_export", ymd()); renderAll();
     }
-    if (enc && navigator.canShare && typeof File === "function") {
-      try {
-        var file = new File([text], name, { type: "application/json" });
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file], title: "Life OS backup" }).then(function () {
-            S_("gm_last_offsite", ymd()); S_("gm_last_export", ymd()); renderAll();
-          }, download);
-          return;
-        }
-      } catch (e) {}
-    }
-    download();
+    if (enc) { shareFile(text, name, "Life OS backup").then(saved); return; }   // a readable copy never goes to the share sheet
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    a.download = name; a.click(); saved("saved");
   }
   function bkBlob() {
     var blob = {};
@@ -3910,6 +4888,194 @@
     inp.click();
   };
 
+  /* ═══ Move to another phone: no server, nothing to type (owner 2026-11-24; threat model move-phone) ═══
+     The Pages copy of the Life OS has no estate to sync with, and the old card asked for an address, a token and a row id.
+     Now: on the old phone, one tap seals everything with the backup's own sealing (AES-256-GCM, the key from PBKDF2-SHA256
+     x310,000 with a fresh salt) under a fresh one-time code of 80 random bits, and the file leaves by the share sheet. The code
+     never travels with the file: the old phone shows it as a QR code and as four short groups. On the new phone, "Bring my life
+     here" opens the file and scans the code once; the data is checked (kind, version, age, shape) and merged by the ONE per-key
+     rule (mergeRemote). The code is never written to storage: it lives only in the open dialog. */
+  var MV_KIND = "securax-life-os-move", MV_MAXAGE = 48 * 3600 * 1000, MV_QR = "SXMOVE1:";
+  var MV_SKIP = /^(gm_sync|gm_ms_tok|gm_undo|gm_lock|gm_move|gm_bk_escrow)/;   // device-only: keys, locks, undo, this feature's own ledger
+  var mvText = null, mvName = "";
+  function mvKeyOk(k) { return typeof k === "string" && /^[A-Za-z0-9_:.\-]{1,160}$/.test(k) && !/^(__proto__|constructor|prototype)$/.test(k); }
+  function mvCode(s) { var t = bkNorm(String(s || "").replace(/^SXMOVE1:/i, "")); return /^[A-HJ-NP-Z2-9]{16}$/.test(t) ? t : ""; }
+  // the share sheet (Nearby Share, WhatsApp to yourself, Drive, e-mail), else a download: one helper for the backup and the move
+  function shareFile(text, name, title) {
+    return new Promise(function (resolve) {
+      function download() {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = name; a.click();
+        resolve("saved");
+      }
+      if (navigator.canShare && typeof File === "function") {
+        try {
+          var file = new File([text], name, { type: "application/json" });
+          if (navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: title }).then(function () { resolve("shared"); }, download); return; }
+        } catch (e) {}
+      }
+      download();
+    });
+  }
+  // -> Promise<{ text, code }>: the sealed file and its one-time code (the caller shows the code; nothing stores it)
+  window.gmMoveMake = function () {
+    if (!(window.crypto && crypto.subtle)) return Promise.reject(new Error("this browser has no encryption here (open the app over https)"));
+    var all = bkBlob(), m = meta(), data = {}, mt = {}, code = bkNewPhrase(16).replace(/-/g, "");
+    Object.keys(all).forEach(function (k) { if (!MV_SKIP.test(k) && mvKeyOk(k)) { data[k] = all[k]; if (typeof m[k] === "number") mt[k] = m[k]; } });
+    var id = Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(12)), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+    var inner = { kind: MV_KIND, v: 1, id: id, made: Date.now(), from: devName(), data: data, meta: mt };
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    return odDerive(code, salt).then(function (key) { return odSeal(key, inner, salt); }).then(function (env) {
+      var o = JSON.parse(env); o.kind = MV_KIND; return { text: JSON.stringify(o), code: code };
+    });
+  };
+  // A file is a move file only if its outer shape is exact; then the code must open it (GCM checks every byte), and what comes out
+  // must be a move of version 1, fresh, never brought here before, with plain string values under safe key names.
+  window.gmMoveOpen = function (text, codeIn) {
+    var code = mvCode(codeIn), env;
+    try { env = typeof text === "string" && text.length < 30e6 ? JSON.parse(text) : null; } catch (e) { env = null; }
+    var B64 = /^[A-Za-z0-9+\/]+={0,2}$/;
+    if (!env || typeof env !== "object" || Array.isArray(env) || env.kind !== MV_KIND || env.v !== 1
+        || typeof env.salt !== "string" || env.salt.length > 40 || !B64.test(env.salt) || typeof env.iv !== "string" || env.iv.length > 40 || !B64.test(env.iv)
+        || typeof env.ct !== "string" || !B64.test(env.ct)) return Promise.reject(new Error("This is not a move file from the Life OS. Nothing was changed."));
+    if (!code) return Promise.reject(new Error("That code is not complete: it is four groups of four letters and digits."));
+    return odDerive(code, unb64(env.salt)).then(function (key) { return odOpen(key, env); })
+      .catch(function () { throw new Error("That code does not open this file. Use the code on the phone that made it."); })
+      .then(function (o) {
+        if (!o || typeof o !== "object" || Array.isArray(o) || o.kind !== MV_KIND || o.v !== 1 || typeof o.id !== "string" || !/^[0-9a-f]{24}$/.test(o.id)
+            || typeof o.made !== "number" || !o.data || typeof o.data !== "object" || Array.isArray(o.data) || !o.meta || typeof o.meta !== "object" || Array.isArray(o.meta))
+          throw new Error("This move file is not in a shape this version knows. Nothing was changed.");
+        var now = Date.now();
+        if (o.made > now + 10 * 60 * 1000) throw new Error("This move file says it was made in the future. Nothing was changed.");
+        if (now - o.made > MV_MAXAGE) throw new Error("This move file is more than two days old. Make a fresh one on the old phone.");
+        if ((G("gm_move_seen", []) || []).indexOf(o.id) >= 0) throw new Error("This move file was already brought here. Make a fresh one to move again.");
+        var data = Object.create(null), mt = Object.create(null), bad = 0;
+        Object.keys(o.data).forEach(function (k) {
+          if (!mvKeyOk(k) || MV_SKIP.test(k) || typeof o.data[k] !== "string" || o.data[k].length > 5e6) { bad++; return; }
+          data[k] = o.data[k]; var t = o.meta[k]; if (typeof t === "number" && isFinite(t) && t > 0 && t <= now + 10 * 60 * 1000) mt[k] = t;
+        });
+        if (bad) throw new Error("This move file holds " + bad + " item(s) that are not Life OS data. Nothing was changed.");
+        return { id: o.id, made: o.made, from: String(o.from || "your other phone").slice(0, 40), data: data, meta: mt };
+      });
+  };
+  // A phone that holds only the example data takes the moved life as it is; otherwise the ONE merge rule applies, and every newer
+  // item on this phone is kept and counted, never silently replaced.
+  window.gmMoveApply = function (mv) {
+    var m = meta(), keys = Object.keys(mv.data), fresh = !window.P || !!window.P.example || !localStorage.getItem("sovP"), kept = 0;
+    gmSnap("before bringing your life from another phone");
+    if (fresh) { keys.forEach(function (k) { delete m[k]; }); S_("gm_meta", m); }
+    else keys.forEach(function (k) { var cur = localStorage.getItem(k); if (cur !== null && cur !== mv.data[k] && (m[k] || 0) > (mv.meta[k] || 0)) kept++; });
+    var data = {}, mt = {}; keys.forEach(function (k) { data[k] = mv.data[k]; if (mv.meta[k]) mt[k] = mv.meta[k]; });
+    var before = G("gm_sync_anomaly", null), changed = mergeRemote(data, mt);
+    if (G("gm_sync_anomaly", null) !== before) return { ok: false, kept: kept, n: keys.length, why: "This phone holds much more than the file, so nothing was merged (a wrong or partial file). Your data here is unchanged." };
+    // a kit edition on this address (osk:) syncs its own keys, so the merge skips them; a move brings only those this phone lacks
+    keys.forEach(function (k) { if (k.indexOf("osk:") === 0 && localStorage.getItem(k) === null) _set(k, mv.data[k]); });
+    S_("gm_move_seen", (G("gm_move_seen", []) || []).concat([mv.id]).slice(-50));
+    gmTouch("Brought your life from another phone", mv.from);
+    return { ok: true, changed: changed, kept: kept, n: keys.length, fresh: fresh };
+  };
+  // Old phone: step 1 (Move) seals and shows the code; step 2 is Share.
+  window.gmMoveOut = function () {
+    gmToast("Sealing your life for the move…");
+    return gmMoveMake().then(function (r) {
+      mvText = r.text; mvName = "life-os-move-" + ymd() + ".json";
+      var c = r.code, groups = c.replace(/(.{4})(?!$)/g, "$1-");
+      gmTouch("Sealed a move to another phone", "a file you share");
+      gmDlg('<div class="gm-mv" role="group" aria-label="Move to another phone">'
+        + '<div style="font-weight:800;font-size:15px;margin-bottom:6px">Move to another phone</div>'
+        + '<div style="font-size:13px;line-height:1.5;margin-bottom:10px">Your life is sealed in one file. Send it to yourself, then on the new phone open the Life OS, tap <b>Bring my life here</b> and scan this code.</div>'
+        + '<button class="btn btn-p" id="gmMvShare" style="width:100%;margin-bottom:10px" onclick="gmMoveShare()">Share the file</button>'
+        + '<div class="gm-mv-qr" style="max-width:180px;margin:0 auto 6px">' + (window.SXQR ? SXQR.svg(MV_QR + c, "The one-time code for this move, as a QR code") : "") + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);text-align:center">No camera there? Type this instead:</div>'
+        + '<div class="gm-mv-code" style="font-family:monospace;font-size:17px;font-weight:800;letter-spacing:1px;text-align:center;margin:2px 0 8px">' + esc(groups) + '</div>'
+        + '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:10px">The file opens only with this code, and the code never leaves this screen. Show it only to your own new phone. The file stops working after two days.</div>'
+        + '<button class="btn btn-s" style="width:100%" onclick="gmMoveDone()">Done</button></div>');
+    }).catch(function (e) { gmToast("Nothing was sealed: " + (e && e.message || e)); });
+  };
+  window.gmMoveShare = function () {
+    if (!mvText) return Promise.resolve(false);
+    return shareFile(mvText, mvName, "My Life OS, for my new phone").then(function (how) {
+      gmToast(how === "shared" ? "Sent. Now scan the code from the new phone." : "Saved on this phone. Send it to the new one, then scan the code.");
+      return how;
+    });
+  };
+  window.gmMoveDone = function () { mvText = null; gmClose(); };
+  // New phone: step 3 (Open the file), then step 4 (Scan the code, or type it)
+  window.gmMoveIn = function () {
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".json,application/json";
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      if (f.size > 30e6) { gmToast("That file is too large to be a move file. Nothing was changed."); return; }
+      var rd = new FileReader();
+      rd.onload = function () { gmMoveAsk(String(rd.result)); };
+      rd.readAsText(f);
+    };
+    inp.click();
+  };
+  window.gmMoveAsk = function (text) {
+    var env = null; try { env = JSON.parse(text); } catch (e) {}
+    if (!env || env.kind !== MV_KIND) { gmToast("This is not a move file from the Life OS. Nothing was changed."); return false; }
+    mvText = text;
+    var cam = typeof window.BarcodeDetector === "function";
+    gmDlg('<div class="gm-mv-in"><div style="font-weight:800;font-size:15px;margin-bottom:6px">Bring my life here</div>'
+      + '<div style="font-size:13px;line-height:1.5;margin-bottom:10px">' + (cam ? 'Scan the code your old phone shows.' : 'Type the code your old phone shows.') + '</div>'
+      + (cam ? '<button class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="gmMoveScan()">Scan the code</button>' : '')
+      + '<label class="f-label" for="gmMvCode">' + (cam ? 'Or type the four groups' : 'The four groups') + '</label>'
+      + '<input id="gmMvCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="XXXX-XXXX-XXXX-XXXX" style="font-family:monospace">'
+      + '<div style="display:flex;gap:8px"><button class="btn ' + (cam ? 'btn-s' : 'btn-p') + '" onclick="gmMoveCode(document.getElementById(\'gmMvCode\').value)">Bring it here</button>'
+      + '<button class="btn btn-s" onclick="gmMoveDone()">Cancel</button></div></div>');
+    return true;
+  };
+  // the camera is the phone's own (one photo of the code, read here by the browser's barcode reader): no video stream, no extra permission
+  window.gmMoveScan = function () {
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      var det; try { det = new BarcodeDetector({ formats: ["qr_code"] }); } catch (e) { gmToast("This phone cannot read codes: type the four groups instead."); return; }
+      createImageBitmap(f).then(function (img) { return det.detect(img); }).then(function (found) {
+        var hit = (found || []).map(function (x) { return String(x.rawValue || ""); }).filter(function (v) { return v.indexOf(MV_QR) === 0; })[0];
+        if (!hit) { gmToast("No move code in that photo. Try again, a little closer, or type the four groups."); return; }
+        gmMoveCode(hit);
+      }).catch(function () { gmToast("That photo could not be read. Type the four groups instead."); });
+    };
+    inp.click();
+  };
+  window.gmMoveCode = function (code) {
+    if (!mvText) return Promise.resolve(false);
+    return gmMoveOpen(mvText, code).then(function (mv) {
+      var r = gmMoveApply(mv);
+      mvText = null; gmClose();
+      if (!r.ok) { gmToast(r.why); return r; }
+      gmToast("Your life is here: " + r.n + " items from " + mv.from + (r.kept ? ". " + r.kept + " newer item(s) on this phone were kept" : "") + ". Undo is in Settings for 30 minutes.");
+      if (window.renderAll) renderAll();
+      return r;
+    }).catch(function (e) { gmToast(e && e.message || String(e)); return false; });
+  };
+  function moveHTML() {
+    var fresh = !window.P || !!window.P.example;
+    return '<div class="gm-move" style="margin-bottom:12px"><div class="info">Moving to a new phone? Nothing to set up and nothing to type: '
+      + 'the old phone seals your life into one file and shows a code; the new phone opens the file and scans the code. No server sees it.</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      + '<button class="btn ' + (fresh ? 'btn-s' : 'btn-p') + '" data-move-out onclick="gmMoveOut()">Move to another phone</button>'
+      + '<button class="btn ' + (fresh ? 'btn-p' : 'btn-s') + '" data-move-in onclick="gmMoveIn()">Bring my life here</button></div></div>';
+  }
+  // The estate sync is offered only when an estate answers on this page's own address: the door path the hub's web server serves,
+  // readable here, saying exactly who it is (a 404, a Pages site or an error page never passes). Nothing is invented.
+  var estateUp = false;
+  window.gmEstateProbe = function () {
+    if (!/^https?:$/.test(location.protocol) || typeof fetch === "undefined") return Promise.resolve(false);
+    return fetch(location.origin + "/_door.json", { cache: "no-store", credentials: "omit" })
+      .then(function (r) { return r && r.ok ? r.json() : null; })
+      .then(function (j) {
+        var up = !!(j && j.ok === true && j.service === "securax-command-center");
+        if (up !== estateUp) { estateUp = up; if (window.renderAll) renderAll(); }
+        return up;
+      }).catch(function () { return false; });
+  };
+  window.gmEstateUp = function () { return estateUp; };
+
   function healthHTML() {
     var rows = [], c = cfg(), last = G("gm_sync_last", null), exp = G("gm_last_export", null);
     var bytes = storageBytes(), kb = Math.round(bytes / 1024);
@@ -3925,7 +5091,7 @@
 
     // Sync
     if (!c) row(null, "Cross-device sync is off",
-      "This device keeps its own copy. Use Export below before switching devices, or turn sync on.");
+      "This device keeps its own copy. Moving to a new phone: Connections \u2192 Move to another phone (one file and one scan, no server).");
     else if (!last) row(false, "Sync configured but nothing has been pushed yet",
       "Change any value to trigger the first push. If this stays empty, check the estate gateway is up and reachable (Tailscale) and the browser console for a 4xx from the sync endpoint.");
     else {
@@ -4341,7 +5507,7 @@
     if (num(l.ef)) rows.push("<li>Emergency fund: about \u20b9" + l.ef + " lakh \u2014 bank + sweep-in FD + liquid fund</li>");
     rows.push("<li>Password manager emergency access is the key to everything digital \u2014 it was set up for you; check your own email for the invitation</li>");
     rows.push("</ul><h3>Property</h3><ul>");
-    P.forEach(function (p) { if (p.n) rows.push("<li>" + p.n + (p.use === "self" ? " (home)" : " (let out)") + (num(p.loan) ? " \u2014 loan outstanding \u2248\u20b9" + p.loan + "L" : "") + "</li>"); });
+    P.forEach(function (p) { if (p.n) rows.push("<li>" + esc(gmTidyName(p.n)) + (p.use === "self" ? " (home)" : " (let out)") + (num(p.loan) ? " \u2014 loan outstanding \u2248\u20b9" + p.loan + "L" : "") + "</li>"); });
     var rp = G("gm_rapid", {}), rl = [];
     RAPID_D.forEach(function (x) { var v = rp[x[0]] || {}; if (v.d) rl.push("<li><b>" + x[1] + ":</b> " + v.d + " decides" + (v.r ? ", after asking " + v.r : "") + "</li>"); });
     if (rl.length) rows.push("</ul><h3>Who decides what</h3><ul>" + rl.join(""));
@@ -4521,16 +5687,29 @@
      with a simple visual where it helps, so you never leave the app to search,
      watch a video, or draw it yourself. Plain steps, equipment substitutes for
      what you actually own, and a self-check. (Systems you can act on, not look up.) */
+  /* The pacer is a live sea (shared/sea.js, SXSea): its long swell rises with the in-breath, holds, falls with the out-breath
+     and holds. The dot on a square stays inside as the last fallback (no canvas at all, and the tests' DOM). */
   var BOX_SVG =
-    '<svg viewBox="0 0 220 180" width="100%" style="max-width:360px;display:block;margin:6px auto">'
+    '<div class="sx-sea" data-sx-sea role="group" aria-label="Box breathing with the sea: breathe in for 4 seconds as the swell rises, hold for 4, breathe out for 4 as it falls, hold for 4">'
+    + '<div class="sx-sea-fb">'
+    + '<svg viewBox="0 0 220 180" width="100%" style="max-width:360px;display:block;margin:6px auto">'
     + '<rect x="60" y="20" width="100" height="100" rx="8" fill="none" stroke="var(--accent)" stroke-width="3"/>'
-    + '<text x="110" y="14" text-anchor="middle" font-size="11" fill="var(--muted)">Inhale 4s →</text>'
+    + '<text x="110" y="14" text-anchor="middle" font-size="11" fill="var(--muted)">Breathe in 4s →</text>'
     + '<text x="168" y="74" font-size="11" fill="var(--muted)">↓ Hold 4s</text>'
-    + '<text x="110" y="138" text-anchor="middle" font-size="11" fill="var(--muted)">← Exhale 4s</text>'
+    + '<text x="110" y="138" text-anchor="middle" font-size="11" fill="var(--muted)">← Breathe out 4s</text>'
     + '<text x="12" y="74" font-size="11" fill="var(--muted)">Hold 4s ↑</text>'
     + '<circle r="7" fill="var(--accent)"><animateMotion dur="16s" repeatCount="indefinite" '
     + 'path="M60,20 L160,20 L160,120 L60,120 Z" keyPoints="0;0.25;0.5;0.75;1" keyTimes="0;0.25;0.5;0.75;1" calcMode="linear"/></circle>'
-    + '</svg><div class="info" style="text-align:center">One lap = one full breath (16s). Follow the dot: in, hold, out, hold. Do 5–10 minutes.</div>';
+    + '</svg></div>'
+    + '<div class="sx-sea-say"><b class="sx-sea-word">Breathe in</b><span class="sx-sea-n">4</span></div>'
+    + '<i class="sx-sea-level" aria-hidden="true"></i>'
+    + '<button type="button" class="sx-sea-snd" aria-pressed="false" hidden>Sea sound</button>'
+    + '</div><div class="info" style="text-align:center">One swell = one full breath (16s). Breathe with the sea: in as it rises, hold, out as it falls, hold. Do 5–10 minutes.</div>';
+  // The sea wakes when its guide opens (a closed guide or a hidden page keeps it asleep; SXSea also stops off screen).
+  document.addEventListener("toggle", function (ev) {
+    var d = ev.target, s = d && d.open && d.querySelector && d.querySelector("[data-sx-sea]");
+    if (s && window.SXSea) window.SXSea.mount(s);
+  }, true);
   var Z2_SVG =
     '<svg viewBox="0 0 320 60" width="100%" style="max-width:320px;display:block;margin:6px auto">'
     + '<rect x="10" y="24" width="300" height="12" rx="6" fill="var(--line)"/>'
@@ -4704,7 +5883,7 @@
     { id: "breathing", icon: "🧘", title: "Box breathing + the 3-month calm ladder", tag: "mind · build up",
       what: "Start with box breathing (weeks 1–2), then climb the ladder. The animation below is all you need — no video.",
       viz: BOX_SVG,
-      steps: ["WEEKS 1–2 — Box breathing: inhale 4s, hold 4s, exhale 4s, hold 4s. Follow the dot above. 5–10 min.",
+      steps: ["WEEKS 1–2 — Box breathing: inhale 4s, hold 4s, exhale 4s, hold 4s. Breathe with the sea above. 5–10 min.",
         "WEEKS 3–4 — Breath counting: inhale, mentally say “1”; exhale, “2”; up to 10, then restart. Mind wanders? Gently return to 1. 10 min.",
         "MONTH 2 — Body scan / Yoga Nidra: lie down, move attention slowly from toes to head, notice sensations without judgement. 10–20 min.",
         "MONTH 3 — Open awareness: sit, let sounds/thoughts/sensations come and go without controlling them. Just observe. 10–15 min."],
@@ -4738,29 +5917,76 @@
 
   /* Box breathing, full screen (owner, 2026-11-18): the inline square is small, so the breathing guide opens the whole
      screen with one square, the word and the count — easy to follow on a phone or an iPad. Under reduced motion the
-     square stays still. The 1-second timer runs only in a real browser; tests drive gmBreathe.step() themselves. */
+     square stays still. The 1-second timer runs only in a real browser; tests drive gmBreathe.step() themselves.
+     The live sea (shared/sea.js, SXSea) fills the screen behind it, its swell driven by THIS guide's own phase (SXSea.clock),
+     so the water rises on Inhale, holds, falls on Exhale and holds, in step with the words and the count (owner, 2026-11-24).
+     Sound is one segmented choice, Off / Sea / Sea + breath, from the one shared graph (SXSea.sound): off by default,
+     remembered (gm_breathe_sound), started only by a tap, faded over half a second, stopped by Done or a hidden page.
+     The sea runs only while this overlay is open. Reduced motion: a still sea; words, count and sound still work. */
   function gmBreathe() {
     var old = document.getElementById("gmBreathe");
+    if (old && gmBreathe.close) gmBreathe.close();
+    old = document.getElementById("gmBreathe");
     if (old) old.parentNode.removeChild(old);
     if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
     if (!document.getElementById("gmBreatheCss")) {
       var st = document.createElement("style"); st.id = "gmBreatheCss";
-      st.textContent = "#gmBreathe{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:var(--bg);color:var(--text);padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}"
-        + "#gmBreathe .gm-breathe-square{width:min(78vw,62vh);height:min(78vw,62vh);border:2px solid var(--gold);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform 1s cubic-bezier(.2,.8,.2,1);will-change:transform}"
-        + "#gmBreathe .gm-breathe-word{font-size:32px;font-weight:800;letter-spacing:.01em;color:var(--text)}"
-        + "#gmBreathe .gm-breathe-count{font-size:56px;font-weight:800;line-height:1;color:var(--gold)}"
-        + "#gmBreathe .gm-breathe-done{margin-top:8px;min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid var(--gold);background:var(--card);color:var(--text);font-size:16px;font-weight:700;cursor:pointer}"
+      st.textContent = "#gmBreathe{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#0d1a2e;color:#f6f1e4;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}"
+        + "#gmBreathe .gm-breathe-square{position:relative;z-index:1;width:min(78vw,62vh);height:min(78vw,62vh);max-height:52vh;border:1.5px solid #f0d696;border-radius:20px;background:radial-gradient(closest-side,rgba(6,12,24,.66),rgba(6,12,24,.4));box-shadow:0 0 28px rgba(240,214,150,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform 1s cubic-bezier(.2,.8,.2,1);will-change:transform}"
+        + "#gmBreathe .gm-breathe-word{font-size:32px;font-weight:800;letter-spacing:.01em;color:#f6f1e4;text-shadow:0 1px 14px rgba(4,8,18,.7),0 0 2px rgba(4,8,18,.6)}"
+        + "#gmBreathe .gm-breathe-count{font-size:56px;font-weight:800;line-height:1;color:#f0d696;text-shadow:0 1px 14px rgba(4,8,18,.7)}"
+        + "#gmBreathe .gm-breathe-snd{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;color:#f6f1e4;font-size:14px;font-weight:700;text-shadow:0 1px 8px rgba(4,8,18,.7)}"
+        + "#gmBreathe .gm-breathe-done{position:relative;z-index:1;margin-top:4px;min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid #f0d696;background:rgba(8,16,30,.62);color:#f6f1e4;font-size:16px;font-weight:700;cursor:pointer}"
+        + "#gmBreathe .gm-breathe-done:focus-visible{outline:2px solid #f0d696;outline-offset:2px}"
+        + "@media (max-height:520px){#gmBreathe{gap:10px}#gmBreathe .gm-breathe-square{max-height:46vh}}"
         + "@media (prefers-reduced-motion:reduce){#gmBreathe .gm-breathe-square{transition:none!important;transform:none!important}}";
       (document.head || document.documentElement).appendChild(st);
     }
     var o = document.createElement("div");
     o.id = "gmBreathe"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true");
     o.setAttribute("aria-label", "Box breathing");
-    o.innerHTML = '<div class="gm-breathe-square"><div class="gm-breathe-word">Inhale</div>'
-      + '<div class="gm-breathe-count">4</div></div><button type="button" class="gm-breathe-done">Done</button>';
+    var MODES = ["off", "sea", "both"], LABEL = { off: "Off", sea: "Sea", both: "Sea + breath" };
+    var mode = "off";
+    try { var sv = localStorage.getItem("gm_breathe_sound"); if (MODES.indexOf(sv) >= 0) mode = sv; } catch (e) {}
+    o.innerHTML = '<div class="sx-sea sx-sea-full" data-sx-sea aria-hidden="true"><div class="sx-sea-fb"></div></div>'
+      + '<div class="gm-breathe-square"><div class="gm-breathe-word">Inhale</div>'
+      + '<div class="gm-breathe-count">4</div></div>'
+      + '<div class="gm-breathe-snd" role="radiogroup" aria-label="Sound"><span id="gmBreatheSndL">Sound</span><span class="sx-seg">'
+      + MODES.map(function (m) { return '<button type="button" role="radio" data-snd="' + m + '" aria-checked="' + (m === mode) + '">' + LABEL[m] + '</button>'; }).join("")
+      + '</span></div><button type="button" class="gm-breathe-done">Done</button>';
     document.body.appendChild(o);
     var PH = ["Inhale", "Hold", "Exhale", "Hold"], phase = 0, count = 4;
     var sq = o.querySelector(".gm-breathe-square"), wd = o.querySelector(".gm-breathe-word"), cd = o.querySelector(".gm-breathe-count");
+    var driven = /jsdom/i.test(navigator.userAgent || "") || !!navigator.webdriver;   // a test DOM or a driver: no timers, no loops
+    var lastStep = performance.now(), live = false, S = window.SXSea;
+    // the guide's own time in the 16 s box: the phase and the count, plus the part of the second that has passed
+    function clock() { return phase * 4 + (4 - count) + (live ? Math.min(0.999, (performance.now() - lastStep) / 1000) : 0); }
+    var prevClock = S ? S.clock : null, sea = null;
+    if (S) { S.clock = clock; try { sea = S.mount(o.querySelector("[data-sx-sea]")); } catch (e) { sea = null; } }
+
+    var snd = null, sndIv = 0;
+    function sndTick() { if (snd && S) { var t = clock(); snd.set(S.breath(t).b, t); } }
+    function sndStop() {
+      if (sndIv) { clearInterval(sndIv); sndIv = 0; }
+      if (snd) { try { snd.off(); } catch (e) {} snd = null; }
+      gmBreathe.audio = null;
+    }
+    // Starts or retunes the sound for the chosen mode. Callers: a tap, or an open that a tap itself caused. Never at load.
+    function sndApply() {
+      if (mode === "off" || !S || document.hidden) { sndStop(); return; }
+      if (!snd) { snd = S.sound ? S.sound(mode) : null; if (!snd) return; snd.resume(); gmBreathe.audio = snd; }
+      else snd.mode(mode);
+      sndTick();
+      if (!sndIv && !driven) sndIv = setInterval(sndTick, 150);
+    }
+    function pick(m) {
+      mode = m;
+      try { localStorage.setItem("gm_breathe_sound", m); } catch (e) {}
+      [].forEach.call(o.querySelectorAll("[data-snd]"), function (b) { b.setAttribute("aria-checked", b.getAttribute("data-snd") === m ? "true" : "false"); });
+      sndApply();
+    }
+    [].forEach.call(o.querySelectorAll("[data-snd]"), function (b) { b.addEventListener("click", function () { pick(b.getAttribute("data-snd")); }); });
+
     function paint() {
       wd.textContent = PH[phase]; cd.textContent = count;
       var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -4771,19 +5997,35 @@
     function step() {
       if (count > 1) count--;
       else { phase = (phase + 1) % 4; count = 4; }
+      lastStep = performance.now();
       paint();
     }
     function close() {
       if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
+      sndStop();
+      live = false;
+      if (sea && sea.stop) { try { sea.stop(); } catch (e) {} }
+      if (S) S.clock = prevClock;
       document.removeEventListener("keydown", key, true);
-      var el = document.getElementById("gmBreathe"); if (el) el.parentNode.removeChild(el);
+      document.removeEventListener("visibilitychange", vis);
+      var el = document.getElementById("gmBreathe"); if (el && el === o) el.parentNode.removeChild(el);
+      gmBreathe.close = null;
+      // a card's sea that this guide put to sleep wakes again
+      try { var card = document.querySelector("details[open] [data-sx-sea]"); if (card && S && !driven) S.mount(card); } catch (e) {}
     }
     function key(ev) { if (ev.key === "Escape") close(); }
-    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close;
+    function vis() {
+      if (document.hidden) sndStop();
+      else if (mode !== "off" && navigator.userActivation && navigator.userActivation.hasBeenActive) sndApply();
+    }
+    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close; gmBreathe.audio = null; gmBreathe.clock = clock; gmBreathe.sound = sndTick;
     document.addEventListener("keydown", key, true);
+    document.addEventListener("visibilitychange", vis);
     o.querySelector(".gm-breathe-done").addEventListener("click", close);
     paint();
-    if (!/jsdom/i.test(navigator.userAgent || "") && !navigator.webdriver) gmBreathe.timer = setInterval(step, 1000);
+    if (!driven) { live = true; lastStep = performance.now(); gmBreathe.timer = setInterval(step, 1000); }
+    // The Start button's own tap is still fresh: a remembered choice may sound at once; otherwise it waits for a tap on the control.
+    if (mode !== "off" && navigator.userActivation && navigator.userActivation.isActive) sndApply();
   }
   window.gmBreathe = gmBreathe;
 
@@ -5335,7 +6577,7 @@
     h += foldHTML("\u{1F4C5} The rhythm", RITUALS.length + " rituals, each shows on Today only when due", cad, false);
     h += (window.gmLangHTML ? gmLangHTML() : '') + '<div style="margin-top:16px">' + healthHTML() + '</div>';
     h += foldHTML("\u{1F3F3} When it goes wrong", inRecovery() ? "recovery mode is ON" : "pause rituals for a bad week", recoveryHTML(), !!inRecovery());
-    h += foldHTML("\u{1F517} Connections", "sync, Microsoft 365, phone reminders \u00b7 all optional",
+    h += foldHTML("\u{1F517} Connections", "move to another phone, sync, Microsoft 365, phone reminders \u00b7 all optional",
       '<div class="info">None of these is needed to use the app. Sync copies your data to your own estate; Microsoft 365 shows today\u2019s calendar on Today; reminders nudge your phone when something is due.</div>'
       + syncHTML() + '<div style="margin-top:12px">' + msHTML() + '</div><div style="margin-top:12px">' + pushHTML() + '</div>', false);
     h += foldHTML("\u{1F441} Who touched my data", touchRows().length ? "last: " + esc(touchRows()[0].w) : "nothing has left this device", touchHTML(), false);
@@ -5842,7 +7084,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmAwayHTML ? gmAwayHTML() : "") + (window.gmMonthAARHTML ? gmMonthAARHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML() + (window.gmWhatIfHTML ? gmWhatIfHTML() : "")
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAwayHTML ? gmAwayHTML() : "") + (window.gmMonthAARHTML ? gmMonthAARHTML() : "") + todayFocusHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML() + (window.gmWhatIfHTML ? gmWhatIfHTML() : "")
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -6055,12 +7297,14 @@
   };
   function quarterCardHTML(tab) {
     var due = quarterDue(), n = (S.okrs || []).length;
-    return '<div style="background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:13px;margin:12px 13px 0">'
+    // kaizen-1: a gold frame only while the check-in is due; once done it is a calm line. The calendar is a quiet link, not a third button.
+    return '<div class="gm-qcard" style="background:var(--card);border:' + (due ? "2px solid var(--gold)" : "1px solid var(--border)") + ';border-radius:14px;padding:13px;margin:12px 13px 0">'
       + '<div style="font-weight:800;font-size:13.5px;color:var(--text)">' + (due ? "\u23f1 Quarterly check-in is due" : "\u2713 Quarterly check-in done for " + qKeyNow()) + '</div>'
-      + '<div style="font-size:12px;color:var(--muted);line-height:1.55;margin:5px 0 9px">About 5 minutes, all taps: grade last quarter, rate the 8 areas of life, pick up to 3 goals from your lowest scores.</div>'
-      + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuarter()">' + (due ? "Start" : "Redo") + '</button>'
+      + (due ? '<div style="font-size:12px;color:var(--muted);line-height:1.55;margin:5px 0 9px">About 5 minutes, all taps: grade last quarter, rate the 8 areas of life, pick up to 3 goals from your lowest scores.</div>' : '<div style="height:8px"></div>')
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' + (due ? '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuarter()">Start</button>' : '')
       + (n && tab === "okr" ? '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmQuarter({gradeOnly:true})">Update progress (taps)</button>' : '')
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add rhythm to calendar</button></div></div>';
+      + (due ? '' : '<a href="#" class="gm-inl" style="font-size:12.5px" onclick="gmQuarter();return false">Redo</a>')
+      + '<a href="#" class="gm-inl" style="font-size:12.5px" onclick="gmCalendar(\'rhythm\');return false">Add to calendar</a></div></div>';
   }
 
   /* -- 2. The rhythm in your calendar: one .ics, recurring, with what to do written in each event -- */
@@ -6114,6 +7358,8 @@
       desc: "Second dental visit for adults, close every value flagged in Q1, the age-based screenings to discuss with your doctor, and one shared family-health folder." },
     { id: "spend-monthly", group: "money", v: 1, name: "Month-end check-in: your real spend", rule: "FREQ=MONTHLY;BYMONTHDAY=1", start: "2026-12-01", months: null, nth: 0, dow: 2, hh: 9, mins: 10,
       desc: "Open the Life OS > Money > What you really spend: type the balance in your main account(s), one number each. The Life OS works out what you really spent." },
+    { id: "money-health", group: "mhealth", v: 1, name: "Money health review (quarterly)", rule: "FREQ=YEARLY;BYMONTH=1,4,7,10;BYDAY=3SA", months: [0, 3, 6, 9], nth: 3, dow: 6, hh: 11, mins: 30,
+      desc: "Open the Life OS > Money > Money health: type this quarter's repo rate and CPI inflation, check the mix against its band, and close the top fix. Inside the band, nothing to do." },
     { id: "bip-weekly", group: "bip", v: 1, name: "Build in public: this week's episode", rule: "FREQ=WEEKLY;BYDAY=SA", months: null, nth: 0, dow: 6, hh: 10, mins: 60,
       desc: "Record 10 minutes, cut one 60-second Short, post it with one lesson, then log the link in Life OS > Playbook > S3." }
   ];
@@ -6137,7 +7383,7 @@
   window.gmCalendarName = function (id) { var e = CALENDAR.filter(function (x) { return x.id === id; })[0]; return e ? e.name : ""; };
   window.gmCalendarICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
-    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : group === "bip" ? "Build in public" : group === "money" ? "Month-end check-in" : "Life OS";
+    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : group === "bip" ? "Build in public" : group === "money" ? "Month-end check-in" : group === "mhealth" ? "Money health review" : "Life OS";
     var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + title];
     rhythmEvents(group).forEach(function (e) {
       var end = new Date(e.start); end.setHours(e.hh, e.mins, 0, 0);
@@ -6156,7 +7402,7 @@
     try {
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-      a.download = (group === "family" ? "family-health" : group === "bip" ? "build-in-public" : group === "money" ? "month-end-check-in" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
+      a.download = (group === "family" ? "family-health" : group === "bip" ? "build-in-public" : group === "money" ? "month-end-check-in" : group === "mhealth" ? "money-health-review" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
     } catch (e) {}
     S_("gm_cal_exported" + (group ? "_" + group : ""), ymd());
     gmToast("Calendar file saved: " + n + " repeating events. Open it and add them to the same calendar each time; a newer file updates these events, it never doubles them.");
@@ -7670,7 +8916,7 @@
         + ' stroke-dasharray="' + cc.toFixed(1) + '" stroke-dashoffset="' + of.toFixed(1) + '" style="--c:' + cc.toFixed(1) + ';--o:' + of.toFixed(1) + '" transform="rotate(-90 34 34)"/>';
     }
     var rd = JSON.stringify([{ n: "Today", p: Math.round(n / 3 * 100), k: "sunrise" }, { n: "Stack", p: stp, k: "emerald" }, { n: "Shield", p: shp, k: "peacock" }]);
-    return welcomeBackHTML() + '<div class="gm-greet"><svg class="gm-ring gm-rings" width="68" height="68" viewBox="0 0 68 68" role="button" tabindex="0" data-rings=\'' + rd + '\''
+    return welcomeBackHTML() + '<div class="gm-greet" data-sx-sky><svg class="gm-ring gm-rings" width="68" height="68" viewBox="0 0 68 68" role="button" tabindex="0" data-rings=\'' + rd + '\''
       + ' onclick="gmRingsInfo()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();gmRingsInfo()}" aria-label="'
       + n + ' of 3 done today; Stack ' + stp + '%; Shield ' + shp + '%. Show what the rings mean">'
       // The fallback drawing wears the same natural palettes as the lit rings (shared/rings.js): sunrise, emerald, peacock.
@@ -9312,24 +10558,28 @@
     document.addEventListener("visibilitychange", function () { gmRest(document.hidden); });
     ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, gmRestWake, { passive: true }); });
   }
-  // Shooting stars at a natural, irregular pace (every 15 to 30 s), only while the app is on screen and motion is welcome.
+  // Shooting stars at the real sky's pace (shared/sky.js: tonight's shower and sporadic rate for the person's place, none by day),
+  // only while the app is on screen and motion is welcome. The header sees about a seventh of the sky.
   // Armed only in a real, visible browser: an automated or headless page would be kept alive by the repeating timer.
   if (!window._gmComets && !navigator.webdriver && !/jsdom|HeadlessChrome/i.test(navigator.userAgent || "")) {
     window._gmComets = 1;
-    var gmComet = function () {
+    var gmCometArmed = false, gmComet = function () {
       try {
         var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
         // Comets fly in their own unmasked layer, behind the title and buttons, so the whole streak shows.
         var hd = document.querySelector("header"), sky = document.getElementById("gmTrail");
         if (!sky && hd) { sky = document.createElement("div"); sky.id = "gmTrail"; sky.setAttribute("aria-hidden", "true"); hd.insertBefore(sky, hd.firstChild); }
-        if (!calm && sky && !document.hidden) {
+        var hr = window.SXSky && SXSky.meteorsNow ? SXSky.meteorsNow() : 0;
+        if (gmCometArmed && !calm && sky && !document.hidden && hr > 0) {
           var c = document.createElement("i"); c.className = "gm-comet";
           c.style.setProperty("--cy", (4 + Math.random() * 30).toFixed(1) + "%");
           c.addEventListener("animationend", function () { if (c.parentNode) c.parentNode.removeChild(c); });
           sky.appendChild(c); setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 2500);
         }
       } catch (e) {}
-      setTimeout(gmComet, 15000 + Math.random() * 15000);
+      gmCometArmed = true;                 // the first call only sets the clock: a streak comes at a random moment, as in the sky
+      var rate = 0; try { rate = window.SXSky && SXSky.meteorsNow ? SXSky.meteorsNow() : 0; } catch (e) {}
+      setTimeout(gmComet, rate > 0 ? Math.max(4000, -Math.log(1 - Math.random()) * 3.6e6 / (rate * .15)) : 600000);
     };
     setTimeout(gmComet, 6000 + Math.random() * 6000);
   }
@@ -9393,6 +10643,7 @@
     try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
     gmSyncLinkImport(); gmPackLinkImport();
     gmMoveInit();
+    gmEstateProbe();
     gmSyncInit();
     gmAccessPair();
     gmOdSync();
@@ -9826,7 +11077,8 @@
   function facts() { return G1("gm_facts", {}) || {}; }
   function factQ(id) { var f = ((window.GM_SYSTEMS || {}).facts || []).filter(function (x) { return x.id === id; })[0]; return f ? f.q : ""; }
   function known(id) {
-    if (id === "cash") { var l = G1("gm_life", {}) || {}; return !!(l.ef && !(G1("gm_examples", {}) || {}).ef) || !!G1("gm_ask_cash", false); }
+    // ask once (kaizen-1): savings typed in the profile already answer "how much cash", so the question is not asked again
+    if (id === "cash") { var l = G1("gm_life", {}) || {}; return !!(l.ef && !(G1("gm_examples", {}) || {}).ef) || !!G1("gm_ask_cash", false) || !!(window.P && !P.example && +P.sav > 0); }
     if (Object.prototype.hasOwnProperty.call(facts(), id)) return true;
     if (id === "partner") return !!(window.P && P.pdob && !P.example);
     if (id === "kids") return !!(window.P && P.kids && P.kids.length && !P.example);
@@ -9884,12 +11136,26 @@
 // the app switcher shows nothing. Honest scope: this guards the screen; the data on the device is protected by the phone's own
 // encryption and lock, and encryption at rest inside the Life OS is the next slice (queue app-lock).
 (function () {
-  var KEY = "gm_lock", hiddenAt = 0;
+  var KEY = "gm_lock", SCENE_KEY = "gm_lock_scene", hiddenAt = 0, seaHandle = null;
   // A lock record is real only if it can be satisfied (a credential and a recovery-code hash): a damaged one must never lock
   // the person out of their own record for ever (robustness audit, 2026-11-14). Anyone able to damage it could already
   // read the device's storage, so treating it as "no lock" gives nothing away.
-  function rec() { try { var r = JSON.parse(localStorage.getItem(KEY) || "null"); return r && typeof r === "object" && typeof r.id === "string" && r.id && typeof r.salt === "string" && r.salt && typeof r.hash === "string" && r.hash ? r : null; } catch (e) { return null; } }
+  function stored() { try { var r = JSON.parse(localStorage.getItem(KEY) || "null"); return r && typeof r === "object" && typeof r.id === "string" && r.id && typeof r.salt === "string" && r.salt && typeof r.hash === "string" && r.hash ? r : null; } catch (e) { return null; } }
+  // Off keeps the record (owner, 2026-11-24): the recovery code's salted hash and the credential id stay, marked off, so turning
+  // the lock back on reuses the code the person already saved (threat lk-i2). Only the app's Erase removes them.
+  function rec() { var r = stored(); return r && !r.off ? r : null; }
   function put(r) { try { if (r) localStorage.setItem(KEY, JSON.stringify(r)); else localStorage.removeItem(KEY); } catch (e) {} }
+  // The lock's Scene choice (owner, 2026-11-24): Sky (default) or Sea, one tap, remembered. A damaged or missing value reads
+  // as Sky, so a bad write never leaves the person without a scene.
+  function scene() { try { return localStorage.getItem(SCENE_KEY) === "sea" ? "sea" : "sky"; } catch (e) { return "sky"; } }
+  window.gmLockScene = function (s) { try { localStorage.setItem(SCENE_KEY, s === "sea" ? "sea" : "sky"); } catch (e) {} if (window.renderAll) renderAll(); };
+  function sceneHTML() {
+    var sc = scene();
+    return '<div style="display:flex;align-items:center;gap:10px;margin-top:10px"><span style="font-size:13px;color:var(--muted)">Scene</span><span class="sx-seg" role="radiogroup" aria-label="Scene">'
+      + '<button type="button" role="radio" data-scene="sky" aria-checked="' + (sc === "sky") + '" onclick="gmLockScene(\'sky\')">Sky</button>'
+      + '<button type="button" role="radio" data-scene="sea" aria-checked="' + (sc === "sea") + '" onclick="gmLockScene(\'sea\')">Sea</button>'
+      + '</span></div>';
+  }
   function b64(buf) { var s = "", b = new Uint8Array(buf); for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
   function unb64(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; var s = atob(t), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
   function rnd(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return a; }
@@ -9911,7 +11177,7 @@
   function paint() {
     var el = document.getElementById("gmLock");
     document.documentElement.classList.toggle("gm-locked", locked);
-    if (!locked) { if (el) el.remove(); return; }
+    if (!locked) { if (seaHandle) { try { seaHandle.stop(); } catch (e) {} seaHandle = null; } if (el) el.remove(); return; }
     if (el) return;
     el = document.createElement("div"); el.id = "gmLock"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Life OS is locked");
     el.innerHTML = '<div class="gm-lock-card sx-glass sx-lock-card">' + (window.SXSky ? SXSky.seal() : '') + '<h2 class="sx-lock-title">Locked</h2>'
@@ -9921,7 +11187,10 @@
       + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
       + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
     document.body.appendChild(el);
-    try { if (window.SXSky) SXSky.mount(el, { comet: true, aurora: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
+    // The chosen scene: the shared sea, or the shared sky as before. Either ends when the lock is removed; the sea also stops
+    // when the lock opens. If the sea engine is missing, the sky is the safe fallback.
+    if (scene() === "sea" && window.SXSea) { try { seaHandle = SXSea.mount(el); } catch (e) { seaHandle = null; } }
+    if (!seaHandle) { try { if (window.SXSky) SXSky.mount(el, { live: true, comet: true, aurora: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {} }
     try { var go = el.querySelector(".gm-lock-go"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // a dialog takes the focus: one Enter opens it
   }
   function say(t) { var m = document.querySelector("#gmLock .gm-lock-msg"); if (m) m.textContent = t; }
@@ -9940,53 +11209,110 @@
     });
   };
   window.gmLockNow = function () { if (!rec()) return; locked = true; paint(); };
+  function makeCred() {
+    return navigator.credentials.create({ publicKey: {
+      rp: { name: "Life OS", id: location.hostname }, user: { id: rnd(16), name: "life-os", displayName: "Life OS" }, challenge: rnd(32),
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000 } });
+  }
+  function getCred(r) { return navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: unb64(r.id) }], userVerification: "required", timeout: 60000 } }).then(function (c) { if (!c) throw new Error("none"); return c; }); }
+  // The person is present: the device's fingerprint or face (a fresh random challenge each time), else the recovery code.
+  // Turning the lock off and making a new code both need it, so a phone left unlocked cannot quietly drop the lock (lk-e2).
+  function present(r, why) {
+    return getCred(r).then(function () { return true; }, function () {
+      var c = null; try { c = window.prompt("Your fingerprint or face did not confirm. Type your recovery code to " + why + "."); } catch (x) {}
+      if (!c) return false;
+      return hashCode(c, unb64(r.salt)).then(function (h) { return h === r.hash; });
+    });
+  }
+  function done(t) { if (typeof gmToast === "function") gmToast(t); if (window.renderAll) renderAll(); }
   window.gmLockEnable = function () {
+    var kept = stored();
     return gmLockSupported().then(function (ok) {
       if (!ok) throw new Error("This browser cannot use the device lock.");
-      return navigator.credentials.create({ publicKey: {
-        rp: { name: "Life OS", id: location.hostname }, user: { id: rnd(16), name: "life-os", displayName: "Life OS" }, challenge: rnd(32),
-        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000 } });
-    }).then(function (cred) {
+      if (!kept) return makeCred().then(function (c) { return b64(c.rawId); });
+      // Back on: one touch proves the person is here; if this device's passkeys were reset, a new one is made. The code stays.
+      return getCred(kept).then(function () { return kept.id; }, function () { return makeCred().then(function (c) { return b64(c.rawId); }); });
+    }).then(function (id) {
+      if (kept) {
+        kept.id = id; delete kept.off; kept.at = Date.now(); put(kept);
+        window._gmLockCode = null; window._gmLockBack = true; locked = false; if (window.renderAll) renderAll(); return null;
+      }
       var code = codeGen(), salt = rnd(16);
       return hashCode(code, salt).then(function (h) {
-        put({ id: b64(cred.rawId), salt: b64(salt), hash: h, idle: 300, at: Date.now() });
-        window._gmLockCode = code; locked = false; if (window.renderAll) renderAll(); return code;
+        put({ id: id, salt: b64(salt), hash: h, idle: 300, at: Date.now() });
+        window._gmLockCode = code; window._gmLockBack = false; locked = false; if (window.renderAll) renderAll(); return code;
       });
     });
   };
   window.gmLockStart = function () {
-    gmLockEnable().catch(function (e) {
+    return gmLockEnable().catch(function (e) {
       if (typeof gmToast === "function") gmToast(e && e.name === "NotAllowedError" ? "Not turned on. You can try again any time." : (e && e.message) || "The lock could not be turned on.");
     });
   };
   window.gmLockDisable = function () {
-    if (locked) return;
-    if (!confirm("Turn off the privacy lock? Anyone holding this device could then open your Life OS.")) return;
-    put(null); window._gmLockCode = null; if (window.renderAll) renderAll();
+    var r = rec(); if (locked || !r) return Promise.resolve(false);
+    if (!confirm("Turn off the privacy lock? Anyone holding this device could then open your Life OS. Your recovery code stays the same if you turn it back on.")) return Promise.resolve(false);
+    return present(r, "turn the lock off").then(function (yes) {
+      if (!yes) { done("Not turned off: it needs your fingerprint, face or recovery code."); return false; }
+      r.off = true; put(r); window._gmLockCode = null; window._gmLockBack = false;
+      done("The lock is off. Turn it back on any time: your recovery code stays the same."); return true;
+    });
   };
-  window.gmLockIdle = function (sec) { var r = rec(); if (!r) return; r.idle = sec; put(r); if (window.renderAll) renderAll(); };
+  // A new recovery code: irreversible for the old one, so it is folded away, offers keeping the code first, needs the words
+  // typed and the person present (friction-by-consequence; threat lk-t2).
+  window.gmLockNewAsk = function () {
+    if (locked || !rec() || typeof gmDlg !== "function") return;
+    gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Make a new recovery code?</div>'
+      + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">Still have the code you saved? Keep it: there is nothing to do. A new code makes the old one stop working, for good, and you will need to save the new one.</div>'
+      + '<button class="btn-sm" onclick="gmClose()" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px;margin-bottom:12px">Keep my current code</button>'
+      + '<label class="f-label" for="gmLockNewIn">Type NEW CODE to confirm</label><input type="text" id="gmLockNewIn" autocomplete="off" autocapitalize="characters" spellcheck="false">'
+      + '<button class="btn-sm" id="gmLockNewGo" disabled style="background:transparent;color:var(--text);border:1px solid var(--muted);padding:9px 14px">Make a new code</button>');
+    var inp = document.getElementById("gmLockNewIn"), go = document.getElementById("gmLockNewGo");
+    if (!inp || !go) return;
+    inp.addEventListener("input", function () { go.disabled = inp.value.trim().toUpperCase() !== "NEW CODE"; });
+    go.addEventListener("click", function () { var t = inp.value; if (typeof gmClose === "function") gmClose(); gmLockNewCode(t); });
+  };
+  window.gmLockNewCode = function (typed) {
+    var r = rec();
+    if (locked || !r) return Promise.resolve(null);
+    if (String(typed || "").trim().toUpperCase() !== "NEW CODE") { done("Nothing changed: your current code still works."); return Promise.resolve(null); }
+    return present(r, "make a new code").then(function (yes) {
+      if (!yes) { done("Nothing changed: it needs your fingerprint, face or current code."); return null; }
+      var code = codeGen(), salt = rnd(16);
+      return hashCode(code, salt).then(function (h) {
+        r.salt = b64(salt); r.hash = h; r.at = Date.now(); put(r);
+        window._gmLockCode = code; window._gmLockBack = false; if (window.renderAll) renderAll(); return code;
+      });
+    });
+  };
+  window.gmLockIdle = function (sec) { var r = rec(); if (!r) return; window._gmLockBack = false; r.idle = sec; put(r); if (window.renderAll) renderAll(); };
   window.gmLockSaved = function () { window._gmLockCode = null; if (window.renderAll) renderAll(); };
   // The Ops card: on by choice, one tap, plain words.
   var SUP = null; gmLockSupported().then(function (ok) { SUP = ok; try { if (window.curTab === "ops" && window.renderAll) renderAll(); } catch (e) {} });
   function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   window.gmLockCardHTML = function () {
     var r = rec(), h = '<div class="road-col gm-lock-set" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px"><span class="gm-glyph" aria-hidden="true"><i>🔒</i></span><b>Privacy lock</b>'
-      + '<span class="pill ' + (r ? "pill-g" : "pill-t") + '" style="margin-inline-start:auto">' + (r ? "On" : "Off") + '</span></div>';
+      + '<span class="pill ' + (r ? "pill-g" : "pill-t") + '" style="margin-inline-start:auto">' + (r ? "On" : "Off") + '</span></div>'
+      + sceneHTML();
     if (window._gmLockCode) {
       return h + '<p style="font-size:13px;margin:8px 0">Your recovery code. If this device’s fingerprint or face ever changes, this code opens your Life OS. Keep it somewhere safe, away from this phone.</p>'
         + '<div class="gm-lock-code">' + e(window._gmLockCode) + '</div><button class="btn-sm" style="background:var(--gold);color:#0d1f35;margin-top:8px" onclick="gmLockSaved()">I have saved it</button></div>';
     }
     if (r) {
       var idle = r.idle || 300;
-      return h + '<p style="font-size:13px;margin:8px 0">Opens with this device’s fingerprint, face or Windows Hello. Locks when you are away for '
+      return h + (window._gmLockBack ? '<p class="gm-lock-back" style="font-size:13px;margin:8px 0;font-weight:700">Back on. Your recovery code is the same one you saved before.</p>' : '')
+        + '<p style="font-size:13px;margin:8px 0">Opens with this device’s fingerprint, face or Windows Hello. Locks when you are away for '
         + (idle >= 3600 ? "an hour" : Math.round(idle / 60) + " minutes") + '; the app switcher shows nothing.</p>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" onclick="gmLockNow()">Lock now</button>'
         + [[60, "1 min"], [300, "5 min"], [900, "15 min"]].map(function (o) { return '<button class="btn-sm" aria-pressed="' + (idle === o[0]) + '" style="' + (idle === o[0] ? "background:var(--gold);color:#0d1f35" : "") + '" onclick="gmLockIdle(' + o[0] + ')">' + o[1] + '</button>'; }).join("")
         + '<button class="gm-quiet" onclick="gmLockDisable()">Turn off…</button></div>'
+        + '<button class="gm-quiet gm-lock-new" onclick="gmLockNewAsk()">Make a new recovery code…</button>'
         + '<p style="font-size:11.5px;color:var(--muted);margin:8px 0 0">The lock guards the screen. Your data on this device is also protected by the phone’s own lock and encryption, and your backups are encrypted.</p></div>';
     }
     if (SUP === false) return h + '<p style="font-size:13px;margin:8px 0">This browser cannot use your fingerprint or face here. Your phone’s own screen lock protects the app; your backups are encrypted.</p></div>';
+    if (stored()) return h + '<p style="font-size:13px;margin:8px 0">Off. Turn it back on with one touch of your fingerprint or face. Your recovery code stays the same one you saved.</p>'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmLockStart()">Turn the lock back on</button></div>';
     return h + '<p style="font-size:13px;margin:8px 0">Open your Life OS with your fingerprint or face, like your bank app. No new password. It locks when you step away.</p>'
       + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmLockStart()">Turn on the lock</button></div>';
   };
@@ -10060,7 +11386,9 @@
       + '<textarea id="gmCardsIn" rows="3" placeholder="HDFC Swiggy, 13&#10;ICICI Amazon Pay, 28"></textarea>'
       + '<button type="button" class="btn-sm" onclick="gmCardsAdd()">Add</button>'
       + '<p class="gm-card-note">Only the name and the statement day. Never a card number, CVV or expiry date: no app needs them to help you here.</p>';
-    if (!c.length) return h + '<p>Add your cards once, and the Life OS tells you which one to use, and when.</p>' + form + '</div>';
+    // kaizen-1: before any card is known this is one line and one tap, not a form on the money page (pasted bank messages
+    // add cards by themselves, so typing them is the rarer path)
+    if (!c.length) return h + '<details class="gm-card-more gm-card-add"><summary>Add your cards once <span style="font-weight:500;color:var(--muted)">\u00b7 the Life OS then says which one to use, and when</span></summary>' + form + '</details></div>';
     var best = gmCardBest(), picks = [];
     RULES.forEach(function (r) {
       var hit = c.filter(function (x) { return r.re.test(x.name); })[0];
@@ -10254,7 +11582,10 @@
     var m = levMap(); m.tax = (m.tax && typeof m.tax === "object") ? m.tax : {}; m.tax.ded = n === "" ? 0 : n; S_("gm_levers", m); renderAll();
   };
   function levMain(lv) {
-    var steps = levSteps(lv.id), h = '<div style="font-size:12.5px;margin-top:4px">' + esc(lv.saves) + '</div>'
+    // kaizen-1: the first sentence says what it saves; the rest of a long explanation is one tap away ("Why?")
+    var sv = String(lv.saves || ""), cut = sv.length > 140 ? sv.indexOf(". ") : -1;
+    var steps = levSteps(lv.id), h = '<div style="font-size:12.5px;margin-top:4px">' + (cut > 0 ? esc(sv.slice(0, cut + 1))
+      + ' <details class="gm-why" style="display:inline"><summary style="display:inline;cursor:pointer;color:var(--muted)">Why?</summary> ' + esc(sv.slice(cut + 2)) + '</details>' : esc(sv)) + '</div>'
       + '<div style="font-size:12px;color:var(--muted);margin-top:4px">about ' + esc(lv.effortMin) + ' minutes</div>';
     if (lv.review && levPast(lv.review)) h += '<div class="info" style="color:var(--amber);margin:8px 0">Check before you act: last verified ' + esc(lv.verified || "") + '</div>';
     h += '<ol style="margin:8px 0 0;padding-left:22px">';
@@ -10407,10 +11738,14 @@
     var p = window.P, out = [], real = p && !p.example;
     if (real) {
       var emis = (p.loans || []).reduce(function (a, l) { return a + swNum(l && l.emi); }, 0), ess = swNum(p.exp) + emis;
-      if (ess > 0 && swNum(p.sav) >= 0) { var rw = swNum(p.sav) / ess; out.push({ id: "runway", t: "Buffer", v: rw.toFixed(1) + " months", st: rw < 3 ? "low" : rw < 6 ? "watch" : "good",
+      // one money model (kaizen-1): the buffer and the saving rate are the figures the Buffer and Saving tiles show, never a
+      // second sum (a red "2.5 months" line sat under a "3.5m" tile). The profile's own sum stays the fallback.
+      var M = typeof window.gmMoney === "function" ? window.gmMoney() : null;
+      var mb = M && M.buffer && M.buffer.liquid > 0 && M.buffer.gapM > 0 ? M.buffer.months : null, ms = M && M.save !== null && M.save >= -100 && M.save <= 100 ? M.save : null;
+      if (mb !== null || (ess > 0 && swNum(p.sav) >= 0)) { var rw = mb !== null ? mb : swNum(p.sav) / ess; out.push({ id: "runway", t: "Buffer", v: rw.toFixed(1) + " months", st: rw < 3 ? "low" : rw < 6 ? "watch" : "good",
         why: "Months the emergency fund covers essentials and EMIs. A doctor would call it your reserve: below 3 months, one shock becomes a crisis.", fix: "Move a fixed amount into the emergency fund on salary day until it reaches 6 months." }); }
       var net = swNum(gmHouseholdIncome(p));
-      if (net > 0 && swNum(p.exp) > 0) { var sr = Math.round((net - swNum(p.exp) - emis) / net * 100); out.push({ id: "saving", t: "Saving rate", v: sr + "%", st: sr < 10 ? "low" : sr < 20 ? "watch" : "good",
+      if (ms !== null || (net > 0 && swNum(p.exp) > 0)) { var sr = ms !== null ? ms : Math.round((net - swNum(p.exp) - emis) / net * 100); out.push({ id: "saving", t: "Saving rate", v: sr + "%", st: sr < 10 ? "low" : sr < 20 ? "watch" : "good",
         why: "The share of take-home kept. An economist's rule of thumb: under 10% the future is borrowed from.", fix: "Raise the SIP by a small amount each salary day; see What we must earn on Money." }); }
       var since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), sp = (G("gm_spend", []) || []).filter(function (x) { return x && x.d >= since; });
       if (sp.length >= 5 && swNum(p.exp) > 0) { var tot = sp.reduce(function (a, x) { return a + swNum(x.a); }, 0), r = Math.round(tot / swNum(p.exp) * 100);
@@ -10468,7 +11803,7 @@
     "Fuel": "Club errands into one trip a week", "Groceries": "One planned list a week, bought once" };
   var NEED_FIXED = ["Bills", "Insurance", "Subscriptions"];
   function needNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s\u20b9]/g, "")); return isFinite(n) ? n : 0; }
-  function needRs(n) { return "Rs " + Math.round(n).toLocaleString("en-IN"); }
+  function needRs(n) { return "\u20b9" + Math.round(n).toLocaleString("en-IN"); }
   window.gmNeedsCalc = function () {
     var p = window.P, cfg = G("gm_needs", {}) || {};
     if (!p || p.example || !(needNum(p.exp) > 0)) return null;
@@ -11728,4 +13063,98 @@
     } catch (e) {}
     return _gmFrGoTab.apply(this, arguments);
   }; }
+})();
+
+/* ── Find anything (queue find-anything, slice 1; owner 2026-11-25) ──────────────────────────────────────────────────
+   One search box finds goals, homes, people, policies and what is coming up, from data already on the device. Pure:
+   no network, no AI, no storage write. A query under two characters answers nothing; matching ignores case and
+   accents. Sensitive fields (a PIN, a password, an account number) are never read — the fields are named one by one,
+   so nothing secret can ever be shown. Damaged storage gives an empty answer, never a crash. */
+(function () {
+  function G(k, d) { var v; try { var s = localStorage.getItem(k); if (!s) return d; v = JSON.parse(s); } catch (e) { return d; } return (v === null || typeof v !== typeof d || Array.isArray(v) !== Array.isArray(d)) ? d : v; }
+  function norm(s) { return String(s === null || s === undefined ? "" : s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+  function words(v) { return typeof v === "string" ? v : typeof v === "number" && isFinite(v) ? String(v) : ""; }
+  function esc(s) { return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function lakh(n) { n = +n; return isFinite(n) && n > 0 ? "\u20b9" + (n >= 1e7 ? (n / 1e7).toFixed(1).replace(/\.0$/, "") + " crore" : (n / 1e5).toFixed(n >= 1e6 ? 1 : 0).replace(/\.0$/, "") + " lakh") : ""; }
+  function open() { var a = window.gmPeople; return a ? a() : []; }
+  function coming() { var a = window.gmComingUp; return a ? a() : []; }
+  var P_KINDS = { term: "Term", endow: "Endowment", whole: "Whole life", pli: "PLI (post office)", ulip: "ULIP", health: "Health", topup: "Top-up" };
+  var P_WHO = { me: "You", partner: "Partner", family: "Family", kids: "Children", parents: "Parents" };
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  window.gmFind = function (q) {
+    var nq = norm(q).trim();
+    if (nq.length < 2) return [];
+    var kinds = [["Goals", []], ["Homes", []], ["People", []], ["Policies", []], ["Coming up", []]];
+    var seen = {};
+    var add = function (gi, t, sub, go) {
+      if (norm(t).indexOf(nq) < 0 && norm(sub).indexOf(nq) < 0) return;
+      var key = gi + "|" + t + "|" + sub; if (seen[key]) return; seen[key] = 1;
+      if (kinds[gi][1].length < 8) kinds[gi][1].push({ t: t, sub: sub, go: go });
+    };
+    try {   // goals: the quarter's objectives and their key results (sovS)
+      var s = G("sovS", { okrs: [] });
+      (Array.isArray(s.okrs) ? s.okrs : []).forEach(function (o) {
+        if (!o || typeof o !== "object") return;
+        var kr = (Array.isArray(o.krs) ? o.krs : []).map(function (k) { return k ? words(k.t) : ""; }).filter(Boolean).join(" \u00b7 ");
+        add(0, words(o.o), kr || "Your quarter's goal", "okr");
+      });
+    } catch (e) {}
+    try {   // homes: gm_props, by name (value and rent stay out of the context line; a PIN or account field is never read)
+      (G("gm_props", []) || []).forEach(function (p) {
+        if (!p || typeof p !== "object") return;
+        var nm = words(p.n).trim(); if (!nm) return;
+        add(1, nm, p.use === "rented" ? "A home you rent" : "Your home", "prop");
+      });
+    } catch (e) {}
+    try {   // people: the people who matter beyond home (a name and a birth day, kept on this device)
+      open().forEach(function (x) { if (x && words(x.n).trim()) add(2, words(x.n).trim(), "Their birthday: " + x.d + " " + MONTHS[(x.m - 1 + 12) % 12], "today"); });
+    } catch (e) {}
+    try {   // policies: the money-health register, by what the policy is called and who it covers
+      var mh = G("gm_mhealth", { policies: [] });
+      (Array.isArray(mh.policies) ? mh.policies : []).forEach(function (p) {
+        if (!p || typeof p !== "object") return;
+        var t = P_KINDS[p.type]; if (!t) return;
+        var who = P_WHO[p.who] || "";
+        var cover = lakh(+p.sa), prem = +p.prem > 0 ? "\u20b9" + Math.round(+p.prem).toLocaleString("en-IN") + " a year" : "";
+        add(3, t, (who ? who + " \u00b7 " : "") + [cover, prem].filter(Boolean).join(" \u00b7 "), "money");
+      });
+    } catch (e) {}
+    try {   // coming up: birthdays, a loan's last EMI, rent, renewals and the month-end check-in
+      coming().forEach(function (x) { if (x && words(x.t)) add(4, words(x.t), words(x.s) || (x.days >= 0 ? "In " + x.days + " days" : "The date has passed; check it"), "today"); });
+    } catch (e) {}
+    return kinds.filter(function (k) { return k[1].length; }).map(function (k) { return { kind: k[0], items: k[1] }; });
+  };
+  window.gmFindOpen = function () {
+    if (typeof gmDlg !== "function") return;
+    gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Find</div>'
+      + '<input type="text" id="gmFindIn" placeholder="Goals, homes, people, policies, what is coming up" autocomplete="off">'
+      + '<div id="gmFindOut" style="margin-top:8px;max-height:55vh;overflow:auto"></div>');
+    var inp = document.getElementById("gmFindIn"), out = document.getElementById("gmFindOut"), last = [];
+    function row(it, gi, i) {
+      return '<button data-g="' + gi + '" data-i="' + i + '" style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;padding:8px 10px;margin-bottom:6px;background:var(--cardAlt);color:var(--text);border:1px solid var(--border);border-radius:10px;cursor:pointer">'
+        + '<span style="font-weight:700;font-size:13px">' + esc(it.t) + '</span><span style="font-size:12px;color:var(--muted)">' + esc(it.sub) + '</span></button>';
+    }
+    function render() {
+      last = window.gmFind ? gmFind(inp.value) : [];
+      out.innerHTML = last.length ? last.map(function (g) {
+        return '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:8px 0 5px">' + g.kind + '</div>'
+          + g.items.map(function (it, i) { return row(it, last.indexOf(g), i); }).join("");
+      }).join("") : '<div style="font-size:12.5px;color:var(--muted);padding:4px 2px">' + (inp.value.trim().length < 2 ? "Two letters or more." : "Nothing found.") + '</div>';
+    }
+    function openIt(it) {
+      if (!it) return;
+      gmClose();
+      if (typeof goTab === "function" && it.go) { try { goTab(it.go); } catch (e) {} }
+    }
+    inp.addEventListener("input", render);
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { e.preventDefault(); gmClose(); }
+      else if (e.key === "Enter") { e.preventDefault(); openIt(last.length && last[0].items.length ? last[0].items[0] : null); if (!last.length) gmClose(); }
+    });
+    out.addEventListener("click", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest("[data-g][data-i]") : null; if (!b) return;
+      var g = last[+b.getAttribute("data-g")]; if (g) openIt(g.items[+b.getAttribute("data-i")]);
+    });
+    render();
+  };
 })();

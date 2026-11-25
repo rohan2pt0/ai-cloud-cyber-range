@@ -1,0 +1,1 @@
+Life OS Money: a Ready for the big waves block checks four global risks against the person's own numbers, shows ready, partly ready or not yet with one plain line why, and offers the fixes the Money health scan already flags (queue horizon-waves, slice 1).

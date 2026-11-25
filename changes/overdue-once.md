@@ -1,0 +1,1 @@
+Life OS Property: an overdue paper for a let-out home is shown once, inside Next for this home, never again in the top strip or as a separate problem card; its fixes stay in the engine (plain-first-everywhere, test181).

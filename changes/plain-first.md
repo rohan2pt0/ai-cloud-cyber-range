@@ -1,0 +1,1 @@
+plain-first: the Property tab speaks everyday words first (one card per problem, a plain headline, one fix), with the ratios, formulas and sources under How we worked this out; a ratchet counts jargon per tab

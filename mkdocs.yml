@@ -164,6 +164,9 @@ nav:
       - "Model factory: judges, routers, monitors and open weights": specs/model-factory.md
       - "Recognition pipeline: fellowships, awards, papers, a book": specs/recognition-pipeline.md
       - "Calls journal: how good is my judgement?": specs/calls-journal.md
+      - "Queue plan, 2026-11: what is Now, what is Later": specs/queue-plan-2026-11.md
+      - "The Life OS as a superapp, without the bloat": specs/superapp-plan-2026-11.md
+      - "Horizon watch: ready for the big waves": specs/horizon-watch-plan.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md

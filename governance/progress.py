@@ -199,6 +199,26 @@ def builders_line() -> str | None:
         return b.last_line()
     except Exception:  # noqa: BLE001 (never break the report)
         return None
+def actions_line(fetch=None) -> str | None:
+    """The deterministic backbone (apps/llm-gateway/app/actions.py): of the writes proposed since the gateway started, how many
+    the code rejected, and what share a model proposed (the owner's target: under 5% of operations call a model). None when
+    the gateway is not answering or nothing was proposed: the report never fails on it."""
+    if fetch is not None:
+        st = fetch()
+    else:
+        gw = os.environ.get("GATEWAY_URL", "http://localhost:8080").rstrip("/")
+        key = os.environ.get("SECURAX_GATEWAY_KEY", "")
+        req = urllib.request.Request(f"{gw}/v1/actions/stats", headers={"Authorization": f"Bearer {key}"} if key else {})
+        try:
+            with urllib.request.urlopen(req, timeout=2) as r:                  # noqa: S310 (the estate's own gateway)
+                st = json.loads(r.read())
+        except (OSError, ValueError, urllib.error.HTTPError):
+            return None
+    if not isinstance(st, dict) or not st.get("proposals"):
+        return None
+    return (f"AI proposals checked by code: {st['proposals']}, {round(st.get('rejection_rate', 0) * 100)}% rejected, "
+            f"{st.get('asked', 0)} asked you first, {st.get('executed', 0)} ran; "
+            f"{round(st.get('model_share', 0) * 100)}% came from a model (target: under 5%)")
 
 
 def new_features(now: float, days: int = 30) -> list[dict]:
@@ -244,6 +264,9 @@ def report(p: dict, say=print) -> None:
     b = builders_line()
     if b:
         say(b)
+    a = actions_line()
+    if a:
+        say(a if d else "\n" + a)
     if p.get("new"):
         say("\nNew in the estate (the last 30 days): try one")
         for f in p["new"][:5]:

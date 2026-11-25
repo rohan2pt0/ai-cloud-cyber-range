@@ -285,6 +285,8 @@ website/app/
 website/vantage/
 website/command/
 website/serif.woff2
+website/sans.woff2
+website/shared/
 portal/navigator.html
 portal/navigator/
 guiding-map/build.json

@@ -52,7 +52,7 @@ machine only when it says the exact sentence. It carries no cookie and no data, 
 
 | Layer | Was | Now | Still one? | Next |
 |---|---|---|---|---|
-| **Command Center page** | Served by one machine | Hosted with the site; each device keeps a copy; the door finds a live machine | The static host (GitHub Pages). A device that has opened it once still has its copy | A second static host: the mirror job in docs.yml, live once the two Cloudflare secrets are set |
+| **Command Center page** | Served by one machine | Hosted with the site; each device keeps a copy; the door finds a live machine | The static host (GitHub Pages). A device that has opened it once still has its copy | A second static host: the Cloudflare Pages steps in docs.yml, live once the two Cloudflare secrets are set |
 | **Life OS and Vantage** | One laptop | Hosted, on-device copy, your encrypted OneDrive copy, and node-to-node sync | No | — |
 | **Gateway (the AI front)** | One machine | Stateless: any node answers (active-active) | No, once you have two nodes | — |
 | **Chat history** | One node's database | Per node | **Yes**: a conversation lives on the node it started on | A shared database with a standby (doc 86) |
@@ -61,7 +61,7 @@ machine only when it says the exact sentence. It carries no cookie and no data, 
 | **The way in** | One tunnel | Cloudflare tunnel **and** Tailscale, independent of each other | No | — |
 | **Passwords** | One vault | One vault on the always-on machine; the apps keep an offline copy | **Yes, accepted** (review 2027-01-31) | A standby |
 | **Backups** | The laptop | Each node, your OneDrive, and the dormant cloud seed banks | The cloud banks are not applied yet (doc 29) | First live apply, dated in the queue |
-| **The code and releases** | GitHub | GitHub, plus a private GitLab mirror once you run its guided step | **Yes** until the mirror is on | In the queue, waiting for you |
+| **The code and releases** | GitHub | GitHub, plus a private GitLab mirror pushed by CI (`mirror.yml`) once you add its secrets | **Yes** until the mirror is on | In the queue, waiting for you |
 | **The domain** | github.io | github.io today; your own domain not live | Adding a domain adds a DNS dependency; keep both | — |
 | **Where the apps live in the browser** | One shared origin (`rohan2pt0.github.io`), with no security headers (GitHub Pages ignores `_headers`) | Header rules for the apps are written (`website/_headers`) | **Yes**: every Pages site on the account shares this origin's storage | An origin of their own on a host that reads the headers, dated in the queue |
 | **You, and the assistant** | You, and one paid assistant | A runbook, `./securax why`, `./securax next`, `./securax ask` on free keys | **Yes** for decisions only you can make | The emergency sheet in the Life OS |
@@ -93,3 +93,19 @@ Then the checks:
 - It does not put a chat client in the browser that calls a model with your own key. That would bypass the gateway's rails: the
   allowance, the audit chain and the data-class check. A hosted page is for finding the machine, not for skipping the controls.
 - It does not stand up cloud machines while nobody is watching.
+
+## The two second homes, and the four steps only you can do
+
+Both are built and sleep until you add their secrets; without them each run logs one line and succeeds.
+
+- **The site** also goes to **Cloudflare Pages** (project `securax`, made by the workflow on its first run) from the same built folder as GitHub Pages (`.github/workflows/docs.yml`).
+- **The code** goes to a private **GitLab** project, all branches and tags, on every push to main and once a day (`.github/workflows/mirror.yml`). This is the always-on path. The laptop mirror (`./securax continuity mirror setup`, doc 84) is the fallback.
+
+Your four steps, about ten minutes:
+
+1. **Cloudflare:** make an API token with the one permission Account > Cloudflare Pages > Edit, and copy your account ID.
+2. **GitLab:** make a blank **private** project, and a personal access token with only `write_repository`, expiring in 1 year.
+3. **GitHub** (Settings > Secrets and variables > Actions): add the secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `GITLAB_MIRROR_TOKEN` and `GITLAB_MIRROR_PATH` (for example `yourname/securax`).
+4. **Run** the `mirror` workflow once (Actions > mirror > Run workflow) and read its last line.
+
+The queue holds a reminder (`gitlab-token-renewal`, due 2027-10-24) so the token never expires unnoticed. Threat model: `ci-mirror-and-second-host`.

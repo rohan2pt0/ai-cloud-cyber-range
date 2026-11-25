@@ -16,5 +16,9 @@ python3 tools/pwa_publish.py website                  # the Life OS and Vantage,
 # Threats in the news, next to the hosted Life OS: drills always; live headlines when THREAT_FETCH=1 (the daily build on main).
 python3 intel/threatwatch.py pack ${THREAT_FETCH:+--fetch} --state "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/threatwatch.json" --out website/app/intel.json || echo "threat pack skipped: the app still carries every drill"
 cp guiding-map/fonts/InstrumentSerif-Regular.woff2 website/serif.woff2   # the site's display serif, next to site.css (one copy in the repo)
+mkdir -p website/shared && cp guiding-map/shared/lux.css guiding-map/shared/sky.js website/shared/   # the shared look and night sky (reuse-first; one copy in the repo)
+cp guiding-map/fonts/Jost-Variable.woff2 website/sans.woff2   # the text face (SIL OFL 1.1, guiding-map/fonts/Jost-OFL.txt), the one the Life OS embeds
+# the lit materials and the world's objects the pages draw (seal and gold call, gold bars, water in glass, the sea), loaded by site.js only when seen
+cp guiding-map/shared/touch.js guiding-map/shared/materials.js guiding-map/shared/world.js guiding-map/shared/gold.js guiding-map/shared/water.js guiding-map/shared/sea.js website/shared/
 python3 tools/linkcheck.py website        # every internal link and image on the built site must exist (doc 99)
 echo "built: website/ (site) + website/docs/ (documentation) for ${SITE_URL:-<no address: set REPO_SLUG or SITE_DOMAIN>}"

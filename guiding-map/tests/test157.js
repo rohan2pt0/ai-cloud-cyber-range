@@ -17,6 +17,9 @@ setTimeout(() => {
   ok("each goal card shows its mountain", !!m, (d.querySelector("#sections") || d.body).textContent.slice(0, 160));
   ok("the climber is placed at the grade and the camps are counted", m && /Goal climb: 80 percent of the way up, 1 of 2 camps reached/.test(m.getAttribute("aria-label")), m && m.getAttribute("aria-label"));
   ok("the summit flag turns gold only at 1.0", /data-gold="1"/.test(w.gmMountain(1, [])) && !/data-gold="1"/.test(w.gmMountain(0.5, [])));
+  const fl = w.gmMountain(1, []);
+  ok("the summit flag is the shared cloth on its pole: hooks for the WebGL renderer and a settled SVG fallback",
+    /class="sx-flag" data-sx-x="176" data-sx-y="4" data-sx-h="18"/.test(fl) && (fl.match(/<polygon /g) || []).length === (w.SXCloth.svgCols - 1) * (w.SXCloth.svgRows - 1), fl.slice(0, 160));
   ok("nothing to enter on the mountain", m && !m.querySelector("input, button"));
   console.log("test157 mountain: " + P + " passed, " + F + " failed"); e.forEach(x => console.log("  " + x)); process.exit(F ? 1 : 0);
 }, 400);

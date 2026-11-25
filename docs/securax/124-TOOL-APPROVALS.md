@@ -48,3 +48,41 @@ An AI agent is only safe to give tools if a person stays in command of the actio
 estate's agent — in the chat, in Studio, over MCP — can be useful *and* can never move your money or act irreversibly
 without your explicit, single-use, audited yes. It is the companion to the gateway's input/output rails, and the reason
 the AI can be trusted with tools at all.
+
+## The decision gate and the rejection pipeline: the AI proposes, code decides
+
+Tool approvals ask a person about one kind of action. The **deterministic backbone** asks the same question of every write
+an AI proposes, in plain code, with no model in the decision (threat model `deterministic-backbone` in
+`governance/threat-models.json`).
+
+**One pipeline for every AI-produced write** (`apps/llm-gateway/app/actions.py`, `POST /v1/actions/propose`). A proposal is
+`{"type": "habit.tick", "payload": {...}, "confidence": 0.97}` and passes five stages in order:
+
+1. **schema**: the payload matches the declared contract for its type (required fields, nothing extra);
+2. **types**: each field's type, range, length, format and allowed values;
+3. **gate**: the decision gate below, the action policy (`ACTION_POLICY_FILE`, the same allow / require_approval / deny
+   shape as the tool policy; a broken file denies everything) and the kill switch;
+4. **idempotency**: the same proposal (its `idempotency_key`, or the hash of type and payload) runs once; a key reused for
+   a different payload is refused;
+5. **audit**: the decision and its reasons go into the hash-chained audit log *before* the write; no audit line, no write.
+
+A failing stage answers `422` with `{"stage", "code", "field", "message"}`, so the caller regenerates or escalates, and
+nothing is written.
+
+**The decision gate** (`apps/llm-gateway/app/gate.py`) routes each action:
+
+| The action | Route |
+|---|---|
+| unknown type, no policy, a policy deny, or AI switched off | **fallback**: no action, a decision request recommending "do nothing" |
+| a missing or out-of-range confidence, or confidence under 0.5 | **fallback** |
+| irreversible (a payment, a deletion, an outside message, an export of private data) | **ask**, whatever the confidence |
+| confidence 0.5 to 0.9, or external, high criticality, personal data, or a policy that requires approval | **ask** |
+| confidence 0.9 or more, reversible, internal, low sensitivity | **auto**, with an undo window (300 s, `GATE_UNDO_S`) |
+
+Confidence can only lower the route. Whether an action can be undone, leaves the estate or matters is a fact in the
+contract, never the model's word; personal data is what the gateway's own PII rails find in the payload.
+
+**What you see.** An **ask** appears in `./securax approvals` with the gate's reasons; approve it once and the same proposal
+runs once. An **auto** action appears in `GET /v1/actions` with its undo deadline; `POST /v1/actions/{id}/undo` takes it
+back inside the window (operator-only, audited). `GET /v1/actions/stats` and `/metrics` count proposals, rejections by
+stage, asks, runs and undos, and `./securax progress` shows the rejection rate and the share of operations a model proposed.

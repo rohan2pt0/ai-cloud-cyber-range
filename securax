@@ -251,6 +251,12 @@ case "$cmd" in
     # router and the Command Center. Nothing is remembered: the next plain `up` starts everything again.
     SAFE=0; if [ "${2:-}" = "--safe" ]; then SAFE=1; SVCS="gateway litellm guiding-map"
       C "SAFE mode: only the AI gateway and the Command Center (Chat, the local model and add-ons stay off). Back to normal:  ./securax up"; fi
+    # SEED mode (./securax up --seed, doc 86): a fallback node on a small cloud server — only the AI gateway, its router,
+    # the home screen and estate-sync start, so this node keeps the data synced with almost no RAM (the local model and
+    # Chat stay on the stronger machines). Picked by itself on a machine with under 2500 MB.
+    SEED=0; if [ "${2:-}" = "--seed" ] || [ "$(ev SECURAX_SEED)" = "1" ]; then SEED=1
+    elif [ "$SAFE" = 0 ] && [ "$(docker_res | awk '{print $1}')" -lt 2500 ]; then SEED=1; fi
+    [ "$SEED" = 1 ] && SVCS="gateway litellm guiding-map estate-sync" && C "SEED mode: only the AI gateway, its router, the home screen and estate-sync start (the local model and Chat stay off)."
     # Regenerate the router config from .env on EVERY start, so a key added by hand (as DEPLOY.md says) or
     # via `./securax setup` just works. Deterministic + idempotent; skipped silently without python3.
     # The router mounts the generated file: it must exist as a FILE (a bind-mount of a missing path makes
@@ -292,7 +298,7 @@ case "$cmd" in
     estate_home
     CORE="gateway litellm ollama open-webui guiding-map estate-sync"
     if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || C "Could not write the HTTPS edge configuration: run  ./securax tls render"; CORE="$CORE tls-edge"; [ -n "$SVCS" ] && SVCS="$SVCS tls-edge"
-      if internal_on; then SIDE="gateway-tls litellm-tls ollama-tls open-webui-tls estate-sync-tls"; [ "$SAFE" = 1 ] && SIDE="gateway-tls litellm-tls"; CORE="$CORE $SIDE"; [ -n "$SVCS" ] && SVCS="$SVCS $SIDE"; C "Internal TLS is ON: the services talk to each other over HTTPS too."; fi; C "TLS edge is ON: the estate is reached over HTTPS only (./securax tls status)."; fi
+      if internal_on; then SIDE="gateway-tls litellm-tls ollama-tls open-webui-tls estate-sync-tls"; [ "$SAFE" = 1 ] && SIDE="gateway-tls litellm-tls"; [ "$SEED" = 1 ] && SIDE="gateway-tls litellm-tls estate-sync-tls"; CORE="$CORE $SIDE"; [ -n "$SVCS" ] && SVCS="$SVCS $SIDE"; C "Internal TLS is ON: the services talk to each other over HTTPS too."; fi; C "TLS edge is ON: the estate is reached over HTTPS only (./securax tls status)."; fi
     # Private Docs / Automation you started with `./securax start` come back after every `up` and `update` (they used to silently stay off).
     OPT=" $(ev SECURAX_OPTIONAL) "
     if [ "$LITE" = 1 ] && [ "$OPT" != "  " ]; then
@@ -1386,10 +1392,12 @@ EOF2
     ;;
   audit)
     # Tamper-evident audit (UK CAF C1.b): every gateway event carries the hash of the one before it.
-    #   ./securax audit verify     check the running gateway's log: an edited, deleted or reordered event is named
+    #   ./securax audit verify [--rotated]   check the running gateway's log, across restarts: an edited, deleted or
+    #                                        reordered event, or a tail cut before a restart, is named
     shift
-    [ "${1:-verify}" = verify ] || { echo "usage: ./securax audit verify"; exit 2; }
-    ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --no-log-prefix gateway 2>/dev/null ) | python3 "$ROOT/governance/auditchain.py"
+    [ "${1:-verify}" = verify ] || { echo "usage: ./securax audit verify [--rotated]"; exit 2; }
+    shift || true
+    ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --no-log-prefix gateway 2>/dev/null ) | python3 "$ROOT/governance/auditchain.py" "$@"
     exit "${PIPESTATUS[1]}"
     ;;
   postmortem)
@@ -2342,6 +2350,7 @@ THE 20% YOU USE 80% OF THE TIME
   selftest       prove every command is wired, loads and (read-only ones) run without throwing — no side effects
   rollback       something broke: go back to the last version that worked (--list shows them; --latest comes forward again)
   up --safe      short of memory: start only the AI gateway and the Command Center (the next plain up starts everything)
+  up --seed      a fallback node on a small server: only the AI gateway, its router, the home screen and estate-sync
   exercise       the CYBER RANGE: practise defending against a live red team; opens in your browser (doc 79)
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
   notify         alerts to your phone (ntfy) or team chat            shortcut       type `securax <command>` from any folder

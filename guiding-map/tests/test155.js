@@ -1,5 +1,5 @@
 // test155: Coming up in your world (owner 2026-11-23): the next real events from facts already held, with nothing to type;
-// three in view, the rest under Later; a waxing moon; late items say so. Fake data only.
+// one in view (one-open-action), the rest under Later; a waxing moon; late items say so. Fake data only.
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
 let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (d !== undefined ? " :: " + d : ""))); };
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
@@ -22,7 +22,7 @@ setTimeout(() => {
   w.goTab("today"); w.renderAll();
   const c = d.querySelector(".gm-cu");
   ok("Today shows the card", !!c, (d.querySelector("#sections") || d.body).textContent.slice(0, 200));
-  ok("three in view, the rest under Later", c && c.querySelectorAll(":scope > div[role=list] > .gm-cu-row").length === 3 && /Later \(\d+\)/.test(c.textContent));
+  ok("one in view, the rest under Later", c && c.querySelectorAll(":scope > div[role=list] > .gm-cu-row").length === 1 && new RegExp("Later \\(" + (L.length - 1) + "\\)").test(c.textContent));
   ok("each row has a moon and a when", c && c.querySelectorAll(".gm-moon").length === L.length && /in 6 days/.test(c.textContent));
   ok("nothing to type, except the one folded line to add someone who matters", c && [...c.querySelectorAll("input, textarea, select")].every(x => x.closest("details.gm-ppl")) && !c.querySelector("details.gm-ppl[open]"));
   // the buffer as water in a glass vessel: the level is the months, a gold line is the aim; still for reduced motion

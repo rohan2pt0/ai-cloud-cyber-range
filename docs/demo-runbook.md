@@ -66,4 +66,4 @@ traceability matrix."
 - [ ] `kind-up.sh` green (admission-deny demo works)
 - [ ] `redteam/run_attacks.py` 100% / 0 FP
 - [ ] `docs/board-brief.md` regenerated today
-- [ ] repo pushed, README + portal/explainer.html open in tabs
+- [ ] repo pushed, README + the visual tour (website/explainer/index.html, published at /explainer/) open in tabs

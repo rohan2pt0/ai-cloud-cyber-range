@@ -115,6 +115,22 @@ def test_all_apps_is_a_rich_page_with_one_door_and_nothing_from_elsewhere(tmp_pa
     stub = (tmp_path / "app" / "hub.html").read_text("utf-8")
     assert stub.count('class="cta"') == 1, "exactly one primary action"
     assert 'href="../vantage/index.html"' in stub and stub.count('class="card node"') == 4
-    assert "<script" not in stub and "http://" not in stub and "https://" not in stub, "nothing loaded from elsewhere"
+    assert "<script" not in stub and "http://" not in stub, "no script, nothing loaded from elsewhere"
+    assert re.findall(r'https://[^"\s<]+', stub) == ["https://github.com/rohan2pt0/ai-cloud-cyber-range"], "the only address out is the source link"
     assert "prefers-reduced-motion" in stub and "inset-inline-end" in stub, "calm motion and right-to-left ready"
     assert (tmp_path / "command" / "serif.woff2").is_file() and (tmp_path / "app" / "icon-192.png").is_file(), "its font and crest are published"
+
+
+def test_all_apps_lists_the_public_pages_so_nobody_hunts_for_a_url(tmp_path):
+    """Owner, 2026-11-25: the documentation, the visual tour and the other public pages sit on the landing page, as relative links
+    (so they follow the site to any host), and the site carries the visual tour from its one source."""
+    _publish(tmp_path)
+    stub = (tmp_path / "app" / "hub.html").read_text("utf-8")
+    for href in ("../docs/", "../explainer/", "../", "../personal/", "../nbfc/", "../assess/", "../install.txt"):
+        assert f'<a class="lk" href="{href}">' in stub, href
+    assert "@@REPO@@" not in stub
+    build = (ROOT / "website" / "build.sh").read_text("utf-8")
+    # one source for the tour: website/explainer/index.html is tracked and rendered like every page; nothing copies an old one over it
+    assert (ROOT / "website" / "explainer" / "index.html").is_file() and "explainer" not in build
+    assert not (ROOT / "portal" / "explainer.html").exists(), "the tour has one source, website/explainer/index.html"
+    assert "/explainer/" in (ROOT / "website" / "_headers").read_text("utf-8") and "}}explainer/" in (ROOT / "website" / "sitemap.xml").read_text("utf-8")

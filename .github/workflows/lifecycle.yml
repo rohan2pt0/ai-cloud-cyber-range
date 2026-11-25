@@ -28,8 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: hashicorp/setup-terraform@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4
         with: { terraform_version: "1.9.8", terraform_wrapper: false }
       - name: Format
         run: terraform fmt -check -recursive infra/terraform
@@ -45,14 +45,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - name: Install helm and kubeconform (pinned, checksum-verified)
         run: |
-          curl -fsSL -o helm.tgz https://get.helm.sh/helm-v3.16.3-linux-amd64.tar.gz
+          # retry with backoff: a Releases hiccup (a 504) must not turn CI red; the checksum still proves the file
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o helm.tgz https://get.helm.sh/helm-v3.16.3-linux-amd64.tar.gz
           echo "f5355c79190951eed23c5432a3b920e071f4c00a64f75e077de0dd4cb7b294ea  helm.tgz" | sha256sum -c -
           # unpack outside the checkout: the archives carry their own LICENSE, which would overwrite the repository's
           tar xzf helm.tgz -C "$RUNNER_TEMP" && sudo mv "$RUNNER_TEMP/linux-amd64/helm" /usr/local/bin/helm
-          curl -fsSL -o kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
           echo "95f14e87aa28c09d5941f11bd024c1d02fdc0303ccaa23f61cef67bc92619d73  kc.tgz" | sha256sum -c -
           tar xzf kc.tgz -C "$RUNNER_TEMP" && sudo mv "$RUNNER_TEMP/kubeconform" /usr/local/bin/kubeconform
       - name: Tenant chart lints, renders for every tier and passes Kubernetes schema validation
@@ -66,7 +67,7 @@ jobs:
         run: |
           kubeconform -strict -summary -ignore-missing-schemas gitops/core gitops/platform gitops/bootstrap gitops/metering gitops/root-app.yaml
           python3 lifecycle/render_core.py --check
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with: { python-version: "3.12" }
       - name: Lifecycle unit tests (manifests, secrets, organs, tenants, dormancy of the sprout profile)
         run: |
@@ -77,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - name: Pinned upstream organs still fetch, prepare and compose-validate (no images are pulled)
         env: { SECURAX_HOME_DIR: /tmp/securax-home }
         run: python3 lifecycle/lifecycle.py organ-check
