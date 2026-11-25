@@ -117,6 +117,11 @@ def test_a_third_party_step_on_a_movable_tag_is_found_and_githubs_own_are_not(rg
     assert rg.actions_pinned({})[0] is False
 
 
+def test_every_action_in_the_real_workflows_is_pinned_to_a_commit(rg):
+    ok, detail = rg.actions_pinned({})
+    assert ok, detail                                                    # the real workflows
+
+
 def test_a_workflow_that_hands_a_stranger_write_access_or_a_shell_is_caught(rg):
     safe = "permissions:\n  contents: read\njobs:\n  a:\n    env:\n      TASK: ${{ github.event.issue.title }}\n    if: github.event.label.name == 'x'\n    steps:\n      - run: echo \"$TASK\"\n"
     assert rg.workflow_problems({"ok.yml": safe}) == []

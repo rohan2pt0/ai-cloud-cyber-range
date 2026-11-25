@@ -50,11 +50,11 @@ jobs:
       OPENCODE_GO_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with: { fetch-depth: 0, persist-credentials: false }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with: { python-version: "3.12" }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
         with: { node-version: "22" }
       - name: "Install the gates and the open-model agent"
         run: |
@@ -79,10 +79,10 @@ jobs:
           echo "slug=$(python3 lifecycle/autobuild_ci.py slug)" >> "$GITHUB_OUTPUT"
           python3 lifecycle/autobuild_ci.py summary "$rc" >> "$GITHUB_STEP_SUMMARY"
       - if: steps.run.outputs.green == '1'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with: { name: change, path: "${{ runner.temp }}/change.patch" }
       - if: steps.run.outputs.green != '1'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with: { name: escalation-brief, path: "escalation-brief.md", if-no-files-found: ignore }
 
   publish:
@@ -100,9 +100,9 @@ jobs:
       ISSUE: ${{ github.event.issue.number }}
       SLUG: ${{ needs.build.outputs.slug }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with: { fetch-depth: 0 }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with: { name: change, path: "${{ runner.temp }}" }
       - name: "Open the PR and start its checks"
         run: |

@@ -1,1 +1,0 @@
-Changelog fragments: a change writes one line in `changes/<branch>.md` and `python3 tools/changelog_fold.py` folds it into the top of [Unreleased], so parallel pull requests stop clashing on CHANGELOG.md.
