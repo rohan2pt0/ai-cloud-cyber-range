@@ -2633,7 +2633,7 @@
   var MH_K = "gm_mhealth";
   var MH_TYPES = { term: ["Term", ""], endow: ["Endowment or money-back", ""], whole: ["Whole life", ""], pli: ["PLI or RPLI (post office)", "IN"],
     ulip: ["ULIP", ""], health: ["Health (base)", ""], topup: ["Top-up or super top-up", ""] };
-  var MH_SAVINGS = { endow: 1, whole: 1, pli: 1 };            // traditional plans: cover bundled with a low guaranteed-plus-bonus return
+  var MH_SAVINGS = { endow: 1, whole: 1, pli: 1 };            // traditional plans: cover bundled with a savings part that earns little
   var MH_LIFE = { term: 1, endow: 1, whole: 1, pli: 1, ulip: 1 };
   var MH_WHO = [["me", "You"], ["partner", "Partner"], ["family", "Family floater"], ["kids", "Children"], ["parents", "Parents"]];
   var MH_MEMBERS = { me: ["me"], partner: ["partner"], kids: ["kids"], family: ["me", "partner", "kids"], parents: ["parents"] };
@@ -2673,9 +2673,9 @@
     var s = strat(age, hz), own = mhSet(c.override), v = own ? Math.round(mhClamp(num(c.override), 0, 100)) : s.v;
     var tilt = mhClamp(c.tilt || 0, -5, 5), eff = Math.round(mhClamp(v + tilt, 0, 100));
     var glide = [0, 5, 10, 15].map(function (k) { return { age: age + k, equity: own ? v : strat(age + k, Math.max(0, hz - k)).v }; });
-    var how = own ? "Your own target: " + v + "% equity." : "100 − age " + age + " = " + s.base + "; dependants " + (s.dep ? s.dep : "0") + "; income " + (s.work > 0 ? "+" : "") + s.work
+    var how = own ? "Your own target: " + v + "% equity." : "100 − age " + age + " = " + s.base + "; dependants " + (s.dep ? "−" + Math.abs(s.dep) : "0") + "; income " + (s.work > 0 ? "+" : s.work < 0 ? "−" : "") + Math.abs(s.work)
       + " (" + (c.work || "salaried") + "); horizon " + Math.round(hz) + " years: " + s.hz + "; kept between 20% and 80% = " + s.v + "% equity.";
-    return { strategic: v, tilt: tilt, target: eff, own: own, glide: glide, how: how + (tilt ? " Tactical tilt " + (tilt > 0 ? "+" : "") + tilt + " = " + eff + "%." : "") };
+    return { strategic: v, tilt: tilt, target: eff, own: own, glide: glide, how: how + (tilt ? " Tactical tilt " + (tilt > 0 ? "+" : "−") + Math.abs(tilt) + " = " + eff + "%." : "") };
   };
   // A personal monetary policy committee: the repo rate and CPI inflation, typed once a quarter, move only the debt duration
   // and a tilt of at most 5 points. A high real rate makes debt pay, so equity leans down; a negative one leans it up.
@@ -2686,7 +2686,7 @@
     var duration = real >= 1.5 ? "medium to long (5 to 10 years): a high real rate is worth locking in"
       : real >= 0 ? "short to medium (1 to 4 years)" : "short (under 3 years) or floating: inflation is above the policy rate";
     return { set: true, repo: repo, cpi: cpi, real: real, tilt: tilt, duration: duration,
-      how: "Real rate = repo " + repo + "% − CPI " + cpi + "% = " + real.toFixed(2) + "%. Tilt = (1 − real rate) × 2.5, kept within ±5 points = " + (tilt > 0 ? "+" : "") + tilt + "." };
+      how: "Real rate = repo " + repo + "% − CPI " + cpi + "% = " + (real < 0 ? "−" : "") + Math.abs(real).toFixed(2) + "%. Tilt = (1 − real rate) × 2.5, kept within ±5 points = " + (tilt > 0 ? "+" : tilt < 0 ? "−" : "") + Math.abs(tilt) + "." };
   };
   // The 5/25 band: act only when the mix is more than 5 points away, or more than 25% of the target away, whichever comes first.
   window.gmMhDrift = function (actual, target) {
@@ -2785,7 +2785,7 @@
         if (e.real < 1 || e.cpk < c.cpk / 10)
           add({ issue: "endow-low-return", tier: 2, where: pli ? "IN" : "", pi: i, title: (pli ? "Postal Life Insurance" : MH_TYPES[p.type][0]) + ": little cover for a large premium",
             freedYear: mhN(p.prem), coverGain: 0,
-            line: mhRs(e.cpk) + " of cover per ₹1,000 of premium; term buys about " + mhRs(c.cpk) + ". At a typical " + c.irr + "% return it earns about " + e.real.toFixed(1) + "% a year after " + c.infl + "% inflation.",
+            line: mhRs(e.cpk) + " of cover per ₹1,000 of premium; term buys about " + mhRs(c.cpk) + ". At a typical " + c.irr + "% return it earns about " + (e.real < 0 ? "−" : "") + Math.abs(e.real).toFixed(1) + "% a year after " + c.infl + "% inflation.",
             ctx: { p: p, e: e } });
       }
       if (p.type === "ulip" && mhN(p.prem) > 0 && mhN(p.sa) / mhN(p.prem) * 1000 < c.cpk / 10)
@@ -2953,7 +2953,7 @@
   // ── The card ──
   function mhFixCtx(c, f, k) { return Object.assign({}, c, f.ctx || {}, { key: "mh" + k, freed: 0 }); }
   function mhItemHTML(c, f, k, open) {
-    var cc = mhFixCtx(c, f, k), R = gmRemedies(f.issue, cc), lead = R.fixes[0], fy = lead && lead.impact ? lead.impact.freedYear || f.freedYear : f.freedYear, cg = lead && lead.impact && lead.impact.coverGain ? lead.impact.coverGain : f.coverGain;
+    var cc = mhFixCtx(c, f, k), R = gmRemedies(f.issue, cc), lead = R.fixes[0], fy = lead && lead.impact ? lead.impact.freedYear || f.freedYear : f.freedYear, cg = f.coverGain;
     var num_ = mhHead(fy, cg) || f.moveLine || "";
     return '<div class="gm-mh-item" data-issue="' + esc(f.issue) + '"' + (f.where ? ' data-where="' + esc(f.where) + '"' : "") + ' style="' + (open ? "" : "padding:8px 0;border-top:1px solid var(--border)") + '">'
       + '<div style="font-weight:800;font-size:' + (open ? "14" : "13") + 'px;overflow-wrap:anywhere">' + esc(f.title) + '</div>'
