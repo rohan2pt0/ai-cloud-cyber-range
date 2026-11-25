@@ -6,9 +6,11 @@
       seal and the gold call with real optics, touch.js so the light follows the pointer or the phone), copied in by
       website/build.sh, loaded only after the page has loaded, drawn only while on screen. The stars drift a little slower than
       the page (a damped spring), never under reduced motion. Reduced motion, a hidden tab or an automated browser get one still
-      frame (each engine decides). Without the files, the hero keeps its plain night colour and the CSS seal.
+      frame (each engine decides). Without the files, the hero keeps its plain night colour and the CSS seal. The seal goes
+      wherever the page puts #seal (the hero, or the tour's guardian scene).
    4. One material per card, for its meaning (shared/world.js CATALOG): gold bars, water in glass and the breathing sea, each
-      drawn by its own engine only when its card comes near the screen. The number is always in words beside it. */
+      drawn by its own engine only when its card comes near the screen. The number is always in words beside it.
+   5. Scroll reveals (.reveal): subtle, physics-damped, off under reduced motion and in automated browsers. */
 (function () {
   "use strict";
 
@@ -52,6 +54,24 @@
   });
   window.addEventListener("hashchange", function () { reveal(location.hash); });
   reveal(location.hash);
+
+  // 5. scroll reveals: a part marked .reveal rises a little and settles as it comes into view (a damped spring in page.css).
+  // Never under reduced motion or in an automated browser (the audits read every part at once), and never for a part
+  // already on screen: without this script, or without IntersectionObserver, everything simply shows.
+  (function () {
+    var still = false; try { still = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { still = false; }
+    if (still || navigator.webdriver || !("IntersectionObserver" in window)) return;
+    var parts = [].slice.call(document.querySelectorAll(".reveal")); if (!parts.length) return;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+    }, { rootMargin: "0px 0px -8% 0px" });
+    parts.forEach(function (el, i) {
+      if (el.getBoundingClientRect().top < innerHeight) { el.classList.add("in"); return; }
+      el.style.setProperty("--rv-delay", (i % 3) * 70 + "ms");
+      io.observe(el);
+    });
+    document.documentElement.classList.add("sx-rv");
+  })();
 
   // 3 and 4. the engines, lazily
   var hero = document.getElementById("hero"), slot = document.getElementById("seal");

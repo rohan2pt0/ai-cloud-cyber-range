@@ -282,3 +282,10 @@ footer a:hover{color:#fff}
   .proof+section{background:var(--bg)}
   .card{border-color:var(--hair)}
 }
+
+/* scroll reveals (site.js 5): a part rises 24 px and settles on a damped spring (a slight overshoot, then rest). Only when
+   site.js has set html.sx-rv, so without the script, under reduced motion or in an audit, everything shows at once. */
+.sx-rv .reveal{opacity:0;transform:translate3d(0,24px,0);transition:opacity .7s cubic-bezier(.2,.7,.2,1) var(--rv-delay,0ms),transform 1.1s cubic-bezier(.16,1.18,.3,1) var(--rv-delay,0ms)}
+.sx-rv .reveal.in{opacity:1;transform:none}
+.sx-rv .phones.reveal.in{transform:none}
+@media (prefers-reduced-motion:reduce){.sx-rv .reveal{opacity:1;transform:none;transition:none}}

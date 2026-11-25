@@ -177,7 +177,7 @@ Everything, with details: [`CHANGELOG.md`](CHANGELOG.md).
 > 🌐 **Product site:** [rohan2pt0.github.io/ai-cloud-cyber-range](https://rohan2pt0.github.io/ai-cloud-cyber-range/) · 📘 **Documentation:** [rohan2pt0.github.io/ai-cloud-cyber-range/docs](https://rohan2pt0.github.io/ai-cloud-cyber-range/docs/) (source in `docs/`, built by `mkdocs.yml`). Every page is listed under [All documentation](#all-documentation) below.
 <!-- readme:site:end -->
 >
-> **Deploy it in 3 steps:** [`DEPLOY.md`](DEPLOY.md) (install Docker → `git clone` → one command) · **Start using it:** [`GETTING-STARTED.md`](GETTING-STARTED.md) · **See it visually:** [`portal/explainer.html`](portal/explainer.html) (one-page illustrated walkthrough).
+> **Deploy it in 3 steps:** [`DEPLOY.md`](DEPLOY.md) (install Docker → `git clone` → one command) · **Start using it:** [`GETTING-STARTED.md`](GETTING-STARTED.md) · **See it visually:** [the two-minute tour](https://rohan2pt0.github.io/ai-cloud-cyber-range/explainer/) (source `website/explainer/index.html`).
 
 ---
 
