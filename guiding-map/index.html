@@ -9599,6 +9599,45 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return out;
   }
 
+  /* ── Plain words first (principle plain-first, owner 2026-11-25) ─────────────────────────────────────────────────────
+     What the Property tab shows by default is a sentence a person can feel, built from their own numbers: rupees a month, a
+     share in words (half, a third, most), years of rent. The ratio, its technical name, its formula, its target and its source
+     sit one tap away under "How we worked this out". Pure functions: the same numbers always give the same words. */
+  function plRound(n) { n = Math.max(0, n); return n >= 1000 ? Math.round(n / 100) * 100 : Math.round(n / 10) * 10; }   // round to what people say: the nearest hundred (ten under a thousand)
+  function plShare(x) {            // how much of the EMI the rent pays, in words
+    return x < 0.15 ? "only a little of" : x < 0.3 ? "about a quarter of" : x < 0.45 ? "about a third of" : x < 0.62 ? "about half" : x < 0.8 ? "about two thirds of" : "most of";
+  }
+  function plQuarters(x) { return x < 40 ? "under half" : x < 60 ? "about half" : x < 85 ? "about three quarters" : "almost all"; }   // a loan share, in words
+  function plCost(r) { return Math.max(0, r.emiAmt + r.outA / 12 - r.rentM * (12 - r.vacM) / 12); }     // what the person adds each month: EMI and costs less the rent that really arrives
+  function plHead(id, r, c) {      // the one plain sentence for an issue
+    var rs = function (n) { return remRs(c, n); }, cost = plRound(plCost(r));
+    if (id === "dscr-low") return "Rent pays " + plShare(r.dscr) + " your EMI. You add " + rs(cost) + " a month.";
+    if (id === "beocc-high") return r.beOcc > 100 ? "Even rented all year, this flat costs you money." : "It has to be let about " + Math.max(1, Math.min(12, Math.round(r.beOcc * 12 / 100))) + " months a year just to pay for itself.";
+    if (id === "debt-heavy") return r.debtToRent > 12 || r.ltv <= 75 ? "At today's rent, the loan would take about " + Math.round(r.debtToRent) + " years of rent to clear." : "The loan is " + plQuarters(r.ltv) + " of what the flat is worth.";
+    if (id === "yield-thin") return "After costs, rent brings in only about " + rs(plRound((r.netYield / 100 * r.valAmt) / 12)) + " a month on a flat worth " + rs(r.valAmt) + ".";
+    if (id === "setoff-cap") return rs(plRound(r.carryForward)) + " of this flat's loss cannot lower this year's tax. It carries forward.";
+    if (id === "papers-open") return "A legal step for this home is still open. It takes one form.";
+    return "This flat costs you " + rs(cost) + " a month.";
+  }
+  // The technical side, kept whole under "How we worked this out": the name, the formula, the aim and where it comes from.
+  var PL_TECH = {
+    "dscr-low": { name: "Rent-to-EMI cover, also called DSCR (debt service cover ratio)", formula: "rent × (12 − vacant months) ÷ (EMI × 12)", aim: "Lenders like 1.2× or more. Below 1.0 you top it up from salary every month.",
+      source: "How lenders judge a rental-property loan (debt service cover); common property-finance rules of thumb.", rows: ["Rent-to-EMI cover", "Monthly cash flow"], val: function (r) { return r.dscr.toFixed(2) + "×"; } },
+    "beocc-high": { name: "Break-even occupancy", formula: "(EMI × 12 + yearly outgo) ÷ (rent × 12)", aim: "70% or less. Above 85% is fragile; above 100% the flat loses money even when let all year.",
+      source: "Property-finance rule of thumb: the share of the year the flat must be let to stand still.", rows: ["Break-even occupancy"], val: function (r) { return r.beOcc.toFixed(0) + "%"; } },
+    "debt-heavy": { name: "Debt to rent (debt-to-rental-income)", formula: "outstanding loan ÷ yearly rent", aim: "8 years or less. Above 12 is leverage doing the work, not the asset.",
+      source: "Property-finance rule of thumb on leverage against rent.", rows: ["Debt-to-rental-income", "Loan-to-value"], val: function (r) { return r.debtToRent.toFixed(1) + " yrs"; } },
+    "yield-thin": { name: "Net rental yield", formula: "(rent × (12 − vacant months) − yearly outgo) ÷ market value", aim: "3% or more. Indian residential net yields cluster around 2 to 3%.",
+      source: "Common property-finance rules of thumb for Indian residential rents.", rows: ["Net rental yield", "Gross rental yield", "Price-to-rent"], val: function (r) { return r.netYield.toFixed(2) + "%"; } }
+  };
+  function plTechHTML(id, r, x, esc2) {
+    var t = PL_TECH[id], h = '<div style="font-size:11.5px;line-height:1.55;color:var(--text)">';
+    if (t) h += '<div><b>' + esc2(t.name) + ':</b> ' + esc2(t.val(r)) + '</div><div>How it is worked out: ' + esc2(t.formula) + '</div><div>The aim: ' + esc2(t.aim) + '</div>';
+    if (x) h += '<div style="margin-top:4px"><b>' + esc2(x[0]) + '.</b> ' + x[2] + '</div>';
+    if (t) h += '<div style="margin-top:4px;color:var(--muted)">Source: ' + esc2(t.source) + '</div>';
+    return h + '</div>';
+  }
+
   /* ── Every issue shows its fixes (principle every-issue-has-a-path, owner 2026-11-25) ──────────────────────────────────
      REMEDIES maps each issue the estate flags to the fixes that can move it. A fix's impact(ctx) is a pure function of the
      person's own numbers, by standard formulas: the amortisation EMI, rent-to-EMI cover (DSCR), break-even occupancy and debt
@@ -9817,6 +9856,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function remLine(c, x) {
     var im = x.impact || {}; if (im.headline) return im.headline;
     var a = im.rupeesPerMonth > 0 ? "+" + remRs(c, im.rupeesPerMonth) + " a month" : "", b = im.metric && im.metricBefore !== im.metricAfter ? im.metric + " " + im.metricBefore + " → " + im.metricAfter : "";
+    if (c.plain) return a;   // plain-first: the rupees by default; the ratio's move sits under How we worked this out
     return a && b ? a + " · " + b : a || b;
   }
   function remFixHTML(c, R, x, best, brief) {
@@ -9837,7 +9877,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<details style="margin-top:4px"><summary style="font-size:12px;cursor:pointer">See the message</summary><textarea readonly id="' + tid + '" rows="5" aria-label="' + esc(x.doIt.label) + '" style="width:100%;font-size:12px">' + esc(x.doIt.text) + '</textarea></details>';
     else if (x.doIt && x.doIt.kind === "call") h += '<div style="margin-top:6px"><button type="button" class="btn-sm" onclick="' + esc(x.doIt.js) + '">' + esc(x.doIt.label) + '</button></div>';
     h += '<details class="gm-fix-how" style="margin-top:4px"><summary style="font-size:11.5px;cursor:pointer;color:var(--muted)">How we worked this out</summary><div style="font-size:11.5px;line-height:1.5;color:var(--text)">'
-      + esc(im.how || "") + '<br>Source: ' + esc(x.source || "") + '</div></details>';
+      + esc(im.how || "") + (c.plain && im.metric && im.metricBefore !== im.metricAfter ? '<br>' + esc(im.metric + ": " + im.metricBefore + " → " + im.metricAfter) : "") + '<br>Source: ' + esc(x.source || "") + '</div></details>';
     return h + '</div>';
   }
   function remBlockHTML(issueId, c, R, led) {
@@ -10655,8 +10695,9 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
           "Break-even occupancy": r.beOcc <= 70 ? "g" : r.beOcc <= 90 ? "a" : "r",
           "Monthly cash flow": r.cashflow >= 0 ? "g" : r.cashflow >= -5000 ? "a" : "r"
         };
-        var WORD = { g: "Strong", a: "Watch", r: "Weak" };
+        var WORD = { g: "Fine", a: "Watch", r: "Needs attention" };   // plain-first (owner 2026-11-25): never "Weak" in red capitals
         var rc = remCtx(p, i), remCache = {}, remOf = function (id) { return remCache[id] || (remCache[id] = gmRemedies(id, rc)); };
+        rc.plain = true;   // plain-first: a fix shows its rupees by default; the ratio's move sits under How we worked this out
         // The target behind each verdict (owner, 2026-11-20): the word alone says nothing about what "strong" means.
         var AIM = {
           "Gross rental yield": "aim 4% or more",
@@ -10682,37 +10723,46 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
             + '<div style="font-size:10.5px;color:var(--muted);line-height:1.4">' + x[2] + '</div></div>'
             + '<div style="text-align:right;max-width:48%;overflow-wrap:anywhere"><div class="gm-num' + (vd ? " gm-v-" + vd : "") + '"' + (vd ? ' aria-label="' + x[1] + ', ' + WORD[vd] + '"' : "") + '>' + (vd ? '<span class="gm-dot" aria-hidden="true"></span>' : "") + x[1] + '</div>'
             + (vd ? '<div class="gm-vw gm-v-' + vd + '">' + WORD[vd] + '</div>' : "")
-            + (vd && AIM[x[0]] ? '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">' + AIM[x[0]] + '</div>' : "") + '</div></div>'
-            + (vd === "r" && REM_KPI[x[0]] ? (function () {   // a red number never stands alone: its best fix, one line, with the way to the full block
-              var b = remOf(REM_KPI[x[0]]).fixes.filter(function (f) { return !f.foldOnly; })[0]; if (!b) return "";
-              return '<div class="gm-fix-kpi" data-issue="' + REM_KPI[x[0]] + '" style="font-size:11.5px;color:var(--text);margin:-4px 0 6px;line-height:1.4">Best fix: <b>' + esc(b.title) + '</b>'
-                + (remLine(rc, b) ? ' \u00b7 ' + esc(remLine(rc, b)) : "") + ' <a href="#" class="gm-fix-ask" style="font-size:11.5px;color:var(--text);text-decoration:underline" onclick="var e=document.getElementById(\'gmFix-' + i + '-' + REM_KPI[x[0]] + '\');if(e)e.scrollIntoView({block:\'center\'});return false">How to fix it</a></div>';
-            })() : "");
+            + (vd && AIM[x[0]] ? '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">' + AIM[x[0]] + '</div>' : "") + '</div></div>';
         };
-        h += '<div style="margin-top:12px">';
-        rows.slice(0, 3).forEach(function (x) { h += metricRow(x); });
-        h += '</div>';
-        if (rows.length > 3) {
-          h += '<details class="gm-later"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + (rows.length - 3) + ')</summary><div>';
-          rows.slice(3).forEach(function (x) { h += metricRow(x); });
-          h += '</div></details>';
-        }
-        h += '<div style="margin-top:10px">';
-        var shown = {}, led = {};
-        v.forEach(function (x) {
-          h += '<div class="gm-issue" style="border-left:3px solid ' + x[1] + ';padding:6px 0 6px 9px;margin-bottom:7px">'
-            + '<div style="font-size:12.5px;font-weight:800;color:' + x[1] + '">' + x[0] + '</div>'
-            + '<div style="font-size:11.5px;color:var(--text);line-height:1.6">' + x[2] + '</div>'
-            + (x[3] && !shown[x[3]] ? remBlockHTML(x[3], rc, remOf(x[3]), led) : "") + '</div>';
-          if (x[3]) shown[x[3]] = 1;
-        });
-        // a weak measure whose issue has no card of its own still gets its fixes
-        rows.forEach(function (x) {
-          var id = REM_KPI[x[0]]; if (VERDICT[x[0]] !== "r" || !id || shown[id]) return; shown[id] = 1;
-          var blk = remBlockHTML(id, rc, remOf(id), led); if (!blk) return;
-          h += '<div class="gm-issue" style="border-left:3px solid var(--red);padding:6px 0 6px 9px;margin-bottom:7px"><div style="font-size:12.5px;font-weight:800;color:var(--red)">' + x[0] + ' is weak</div>' + blk + '</div>';
-        });
-        h += '</div>';
+        /* Plain first (owner, 2026-11-25): one card per problem. Its headline is a sentence from the person's own numbers, its
+           state a calm word, its best fix one button, the others under More ways (n); the ratio, its name, formula, aim and
+           source, and the measures it was judged by, all sit under "How we worked this out". The first problem is in view
+           (one open action); the rest wait under Later (n) with the measures that are fine. */
+        var ORDER = ["dscr-low", "beocc-high", "debt-heavy", "yield-thin", "setoff-cap", "papers-open"], probs = [], fines = [], have = {};
+        v.forEach(function (x) { if (!x[3]) fines.push(x); else if (!have[x[3]]) { have[x[3]] = 1; probs.push({ id: x[3], x: x }); } });
+        rows.forEach(function (x) { var id = REM_KPI[x[0]]; if (VERDICT[x[0]] === "r" && id && !have[id]) { have[id] = 1; probs.push({ id: id, x: null }); } });   // a weak measure with no card of its own still gets one
+        probs.sort(function (p1, q1) { return ORDER.indexOf(p1.id) - ORDER.indexOf(q1.id); });
+        var netIn = window.P && num(P.net) ? num(P.net) : 0, cost = plCost(r), emerg = netIn > 0 && cost > netIn * 0.5, usedRow = {}, led = {};
+        var rowOf = function (nm) { return rows.filter(function (y) { return y[0] === nm; })[0]; };
+        var cardHTML = function (pb) {
+          var id = pb.id, fine = !id, red = emerg && (id === "dscr-low" || id === "beocc-high"), col = fine ? "var(--green)" : red ? "var(--red)" : "var(--amber)";
+          var head = fine ? pb.x[0] : plHead(id, r, rc), t = PL_TECH[id], fold = "";
+          if (!fine) {
+            var mine = (t ? t.rows : []).map(rowOf).filter(Boolean);
+            mine.forEach(function (y) { usedRow[y[0]] = 1; });
+            fold = '<details class="gm-pf-how" style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">How we worked this out</summary>'
+              + '<div style="margin-top:4px">' + plTechHTML(id, r, pb.x, esc) + mine.map(metricRow).join("") + '</div></details>';
+          }
+          return '<div class="gm-issue gm-pf" data-issue="' + esc(id) + '" style="border-left:3px solid ' + col + ';padding:8px 0 8px 10px;margin-bottom:9px">'
+            + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">'
+            + '<div class="gm-pf-head" style="flex:1 1 200px;min-width:0;overflow-wrap:anywhere;font-size:14px;font-weight:800;line-height:1.4;color:var(--text)">' + esc(head) + '</div>'
+            + '<span class="gm-pf-state" style="font-size:11.5px;font-weight:700;color:var(--text);white-space:nowrap"><span aria-hidden="true" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + col + ';margin-inline-end:5px"></span>' + (fine ? "Fine" : "Needs attention") + '</span></div>'
+            + (fine ? '<div style="font-size:11.5px;color:var(--text);line-height:1.6;margin-top:3px">' + pb.x[2] + '</div>' : remBlockHTML(id, rc, remOf(id), led) + fold) + '</div>';
+        };
+        // the one line on top: what this flat costs a month, and the best next step
+        var lead = null; probs.some(function (pb) { if (pb.id === "setoff-cap" || pb.id === "papers-open") return false; lead = remOf(pb.id).fixes.filter(function (f) { return !f.foldOnly && !f.hard && !f.question; })[0] || null; return !!lead; });
+        var VERB = { "rate-reset": "saves", "prepay": "saves", "rent-renewal": "adds" }, rsP = function (n) { return remRs(rc, n); }, rpm = lead && lead.impact && lead.impact.rupeesPerMonth > 0 ? lead.impact.rupeesPerMonth : 0;
+        var left = r.rentM * (12 - r.vacM) / 12 - r.emiAmt - r.outA / 12;
+        var sum = owes ? "Add this loan's EMI under Loans, to see what the flat really costs you."
+          : cost > 0 ? "This flat costs you " + rsP(plRound(cost)) + " a month." + (lead ? " Best next step: " + lead.title.charAt(0).toLowerCase() + lead.title.slice(1) + (rpm ? " (" + (VERB[lead.id] || "is worth") + " about " + rsP(rpm) + " a month)" : "") + "." : "")
+          : "This flat pays for itself" + (left > 0 ? ": about " + rsP(plRound(left)) + " a month is left after the loan and costs." : ".");
+        h += '<div class="gm-pf-sum" style="margin:12px 0 8px;font-size:13.5px;font-weight:700;line-height:1.5;color:var(--text);overflow-wrap:anywhere">' + esc(sum) + '</div>';
+        var later = [];
+        if (probs.length) { h += cardHTML(probs[0]); probs.slice(1).forEach(function (pb) { later.push(cardHTML(pb)); }); fines.forEach(function (x) { later.push(cardHTML({ id: "", x: x })); }); }
+        else fines.forEach(function (x) { h += cardHTML({ id: "", x: x }); });
+        rows.forEach(function (x) { if (!usedRow[x[0]]) later.push(metricRow(x)); });
+        if (later.length) h += '<details class="gm-later"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + later.length + ')</summary><div>' + later.join("") + '</div></details>';
       }
       h = filledP ? hTop + h + hMid + '<details class="road-col gm-prop-nums" data-pi="' + i + '" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:13px">The numbers (' + F.length + ') <span style="font-weight:500;color:var(--muted)">\u00b7 tap to edit</span></summary>' + inputs + '</details>'
         : hTop + hMid + inputs + h;

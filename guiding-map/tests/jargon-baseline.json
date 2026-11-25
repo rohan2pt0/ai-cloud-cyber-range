@@ -1,0 +1,31 @@
+{
+ "about": "Jargon terms visible by default on each tab (tests/test176.js). A ceiling: it may only go down. Plain-first, owner 2026-11-25.",
+ "tabs": {
+  "today": 0,
+  "inbox": 0,
+  "deadlines": 0,
+  "ask": 0,
+  "guide": 2,
+  "stack": 0,
+  "systems": 0,
+  "life": 3,
+  "breaks": 0,
+  "career": 2,
+  "prop": 0,
+  "ops": 0,
+  "map": 1,
+  "book": 4,
+  "all": 1,
+  "score": 1,
+  "plan": 0,
+  "growth": 0,
+  "money": 0,
+  "risk": 0,
+  "okr": 0,
+  "wheel": 0,
+  "commit": 0,
+  "cal": 0,
+  "kids": 0,
+  "arch": 0
+ }
+}

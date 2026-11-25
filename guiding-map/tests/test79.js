@@ -17,7 +17,7 @@ setTimeout(() => {
     ok(nums.length >= 10, "the property numbers render");
     const judged = nums.filter((n) => /gm-v-[gar]/.test(n.className));
     ok(judged.length >= 7, "the decision numbers each carry a verdict colour (" + judged.length + ")");
-    ok(Array.from(d.querySelectorAll(".gm-metric .gm-vw")).every((x) => /^(Strong|Watch|Weak)$/.test(x.textContent)), "each verdict also has a word, never colour alone");
+    ok(Array.from(d.querySelectorAll(".gm-metric .gm-vw")).every((x) => /^(Fine|Watch|Needs attention)$/.test(x.textContent)), "each verdict also has a word, never colour alone");
     ok(!/₹-/.test(d.getElementById("sections").textContent), "losses read with a real minus sign, not '₹-'");
     const css = Array.from(d.querySelectorAll("style")).map((s) => s.textContent).join("\n");
     var gm = (css.match(/--gold-metal:var\(--sx-gold-edge,(linear-gradient\(135deg,[^)]*\))\)/) || [])[1] || "";
