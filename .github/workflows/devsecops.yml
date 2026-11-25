@@ -111,8 +111,13 @@ jobs:
         with: { sarif_file: trivy-config.sarif }
       - name: Conftest (OPA policy gate on Terraform)
         run: |
-          curl -fsSL https://github.com/open-policy-agent/conftest/releases/download/v0.56.0/conftest_0.56.0_Linux_x86_64.tar.gz | tar xz conftest
-          sudo mv conftest /usr/local/bin/
+          # download to a file, verify against the release's own checksums (retried: a 504 must not turn CI red), then
+          # unpack outside the checkout: a pipe would skip the verification (the helm install in lifecycle.yml does the same)
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o "$RUNNER_TEMP/conftest_0.56.0_Linux_x86_64.tar.gz" https://github.com/open-policy-agent/conftest/releases/download/v0.56.0/conftest_0.56.0_Linux_x86_64.tar.gz
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o "$RUNNER_TEMP/conftest_0.56.0_checksums.txt" https://github.com/open-policy-agent/conftest/releases/download/v0.56.0/conftest_0.56.0_checksums.txt
+          (cd "$RUNNER_TEMP" && grep "conftest_0.56.0_Linux_x86_64.tar.gz" conftest_0.56.0_checksums.txt | sha256sum -c -)
+          tar xzf "$RUNNER_TEMP/conftest_0.56.0_Linux_x86_64.tar.gz" -C "$RUNNER_TEMP"
+          sudo mv "$RUNNER_TEMP/conftest" /usr/local/bin/
           # A full plan needs cloud creds; here we lint the HCL and run policy unit smoke.
           conftest verify --policy policies/opa || true
 
