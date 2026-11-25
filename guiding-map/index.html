@@ -9594,9 +9594,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (r.carryForward > 0) out.push(["Loss above the \u20b92L set-off cap", "var(--amber)",
       "\u20b9" + Math.round(r.carryForward).toLocaleString("en-IN") + " cannot be set off against salary this year. It carries forward eight years and only ever offsets future house-property income.", "setoff-cap"]);
     if (!out.length) out.push(["Nothing structurally wrong", "var(--green)", "The numbers hold up. Re-benchmark the rent annually and leave it alone."]);
-    // an overdue paper is an issue too, and a quick win (every-issue-has-a-path)
-    if ((p.use || "letout") === "letout" && llRows(p).some(function (x) { return (x.id === "police" || (x.id === "registration" && llMH())) && x.days < 0; }))
-      out.push(["A paper for this home is still open", "var(--amber)", "A legal step, quick to close: one form, and the risk is gone.", "papers-open"]);
+    // An overdue paper is shown once, in "Next for this home" (plain-first-everywhere, owner 2026-11-25): never a second card.
     return out;
   }
 
@@ -10699,7 +10697,10 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function landlordSummary(P) {
     var let_ = P.filter(function (p) { return (p.use || "letout") === "letout"; }), first = null;
     if (!let_.length) return "";
-    let_.forEach(function (p) { var r = llRows(p)[0]; if (r && (!first || r.days < first.days)) first = r; });
+    let_.forEach(function (p) {
+      var r = llRows(p).filter(function (x) { return x.id !== "police" && x.id !== "registration"; })[0];   // papers are shown once, in "Next for this home"
+      if (r && (!first || r.days < first.days)) first = r;
+    });
     return '<div class="road-col gm-ll-sum" style="margin-bottom:10px;font-size:13px">' + let_.length + " home" + (let_.length > 1 ? "s" : "") + " let"
       + (first ? " · next: <b>" + esc(first.t) + '</b> <span style="white-space:nowrap">' + esc(llShow(first.d)) + "</span>" + (first.days < 0 ? " " + llBadge("sx-state-low", "overdue") : first.days <= 7 ? " " + llBadge("sx-state-watch", "due soon") : "") : " · nothing due") + '</div>';
   }
@@ -10810,7 +10811,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
            state a calm word, its best fix one button, the others under More ways (n); the ratio, its name, formula, aim and
            source, and the measures it was judged by, all sit under "How we worked this out". The first problem is in view
            (one open action); the rest wait under Later (n) with the measures that are fine. */
-        var ORDER = ["dscr-low", "beocc-high", "debt-heavy", "yield-thin", "setoff-cap", "papers-open"], probs = [], fines = [], have = {};
+        var ORDER = ["dscr-low", "beocc-high", "debt-heavy", "yield-thin", "setoff-cap"], probs = [], fines = [], have = {};
         v.forEach(function (x) { if (!x[3]) fines.push(x); else if (!have[x[3]]) { have[x[3]] = 1; probs.push({ id: x[3], x: x }); } });
         rows.forEach(function (x) { var id = REM_KPI[x[0]]; if (VERDICT[x[0]] === "r" && id && !have[id]) { have[id] = 1; probs.push({ id: id, x: null }); } });   // a weak measure with no card of its own still gets one
         probs.sort(function (p1, q1) { return ORDER.indexOf(p1.id) - ORDER.indexOf(q1.id); });

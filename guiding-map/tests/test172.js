@@ -29,7 +29,8 @@ setTimeout(() => {
   w.goTab("prop"); w.renderAll();
   const sec = d.getElementById("sections") || d.body;
   const blocks = [...sec.querySelectorAll(".gm-fix")], ids = blocks.map(b => b.getAttribute("data-issue"));
-  ["dscr-low", "beocc-high", "debt-heavy", "setoff-cap", "papers-open"].forEach(id => ok("flagged issue " + id + " has a fix block", ids.includes(id), ids.join()));
+  ["dscr-low", "beocc-high", "debt-heavy", "setoff-cap"].forEach(id => ok("flagged issue " + id + " has a fix block", ids.includes(id), ids.join()));
+  ok("a paper is shown in Next for this home, not as a fifth card, and its fixes stay in the engine", !ids.includes("papers-open") && w.gmRemedies("papers-open", w.gmRemedyCtx(0)).fixes.some(f => f.id === "police"), ids.join());
   ok("every flagged warning card carries a fix block", [...sec.querySelectorAll(".gm-issue")].filter(c => /var\(--(red|amber)\)/.test(c.getAttribute("style"))).every(c => c.querySelector(".gm-fix")));
   blocks.forEach(b => {
     const id = b.getAttribute("data-issue");
@@ -40,7 +41,8 @@ setTimeout(() => {
   ok("the same lead fix is spelled out once, then named briefly", (sec.textContent.match(/The same step as above/g) || []).length >= 1 && sec.querySelectorAll('.gm-fix-best[data-rem="rate-reset"] details.gm-fix-how').length === 1);
   ok("a guard says what not to do: no prepay while the buffer is under 6 months", /What not to do: Do not prepay yet: it would leave 2\.5 months of buffer/.test(d.querySelector('.gm-fix[data-issue="debt-heavy"]').textContent), d.querySelector('.gm-fix[data-issue="debt-heavy"]').textContent.slice(-300));
   ok("a fix that does not move the issue's number never leads it", d.querySelector('.gm-fix[data-issue="debt-heavy"] .gm-fix-best').getAttribute("data-rem") === "rent-renewal");
-  ok("the hard compliance fix leads the papers block", (d.querySelector('.gm-fix[data-issue="papers-open"] .gm-fix-best') || {}).getAttribute && d.querySelector('.gm-fix[data-issue="papers-open"] .gm-fix-best').getAttribute("data-rem") === "police");
+  const paperFixes = w.gmRemedies("papers-open", w.gmRemedyCtx(0)).fixes;
+  ok("the hard compliance fix still leads the paper's fixes in the engine", paperFixes[0] && paperFixes[0].id === "police" && paperFixes[0].hard, paperFixes.map(f => f.id).join());
   // plain-first (2026-11-25): a weak number sits inside its problem's one card, under "How we worked this out", beside that card's best fix
   ok("a red number never stands alone: each red measure sits in a card that carries its best fix", [...sec.querySelectorAll(".gm-num.gm-v-r")].every(n => { const card = n.closest(".gm-issue"); return card && card.querySelector(".gm-fix .gm-fix-best") && n.closest("details.gm-pf-how"); }));
   ok("the best fix for the EMI gap is one call to the lender", d.querySelector('.gm-fix[data-issue="dscr-low"] .gm-fix-best').getAttribute("data-rem") === "rate-reset");
