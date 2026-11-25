@@ -158,6 +158,20 @@ if [ "$SERVER" = 1 ]; then
   if [ "$DRY" = 1 ]; then echo "  [would run] as securax: bash install.sh ${_args[*]:-}, then ./securax up, then ./securax online setup"; rm -f "$_me"; exit 0; fi
   [ -e /home/securax/securax ] || sudo -iu securax env SECURAX_REPO="$REPO" bash "$_me" ${_args[@]+"${_args[@]}"}
   rm -f "$_me"
+  # A small cloud server (under 2500 MB, e.g. the free tier) runs SEED mode: only the AI gateway, its router, the home
+  # screen and estate-sync, so this node keeps the data synced with almost no RAM (doc 86). Written to .env so it stays.
+  _mem_mb="$(( $(awk '/^MemTotal:/{print $2}' /proc/meminfo 2>/dev/null || echo 0) / 1024 ))"
+  if [ "${_mem_mb:-0}" -gt 0 ] && [ "$_mem_mb" -lt 2500 ]; then
+    _env="/home/securax/securax/local/compose/.env"
+    [ -f "$_env" ] || cp /home/securax/securax/local/compose/.env.example "$_env"
+    if grep -q '^SECURAX_SEED=' "$_env" 2>/dev/null; then
+      sed -i 's/^SECURAX_SEED=.*/SECURAX_SEED=1/' "$_env"
+    else
+      printf 'SECURAX_SEED=1\n' >> "$_env"
+    fi
+    chown securax "$_env" 2>/dev/null || true
+    say "  ✔ ${_mem_mb} MB → SEED mode on (only the gateway, router, home screen and estate-sync start)"
+  fi
   [ -n "$RESTORE" ] || sudo -iu securax env SECURAX_NO_OPEN=1 bash -lc 'cd ~/securax && ./securax up' || die "The estate did not start. Run:  sudo -iu securax  then  cd ~/securax && ./securax doctor"
   # the schedules (nightly backup, code mirror, clean-ups, alerts) run from cron, as the securax user
   sudo -iu securax bash -lc 'cd ~/securax && ./securax routines install' >/dev/null 2>&1 && say "  ✔ schedules on (./securax routines list)" \
