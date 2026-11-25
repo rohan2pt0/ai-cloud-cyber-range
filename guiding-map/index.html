@@ -9922,6 +9922,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   var MH_K = "gm_mhealth";
   var MH_TYPES = { term: ["Term", ""], endow: ["Endowment or money-back", ""], whole: ["Whole life", ""], pli: ["PLI or RPLI (post office)", "IN"],
     ulip: ["ULIP", ""], health: ["Health (base)", ""], topup: ["Top-up or super top-up", ""] };
+  var MH_DUE = { term: "Term cover", endow: "Savings policy", whole: "Whole life cover", pli: "Post office policy", ulip: "Unit-linked policy", health: "Health cover", topup: "Top-up cover" };   // plain words for the due list
   var MH_SAVINGS = { endow: 1, whole: 1, pli: 1 };            // traditional plans: cover bundled with a savings part that earns little
   var MH_LIFE = { term: 1, endow: 1, whole: 1, pli: 1, ulip: 1 };
   var MH_WHO = [["me", "You"], ["partner", "Partner"], ["family", "Family floater"], ["kids", "Children"], ["parents", "Parents"]];
@@ -10213,7 +10214,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         return { rupeesPerMonth: fy / 12, freedYear: fy, coverGain: 0, headline: mhHead(fy, 0) + " of interest", note: "Ask the lender to keep the EMI and shorten the loan.",
           how: "Interest saved a year ≈ amount repaid " + mhRs(A) + " × " + c.L.rate + "%." }; },
       doIt: function (c) { return { kind: "copy", label: "Copy a message to the lender", text: "Dear Sir or Madam,\n\nI would like to make a part-prepayment on my " + c.L.type.toLowerCase() + ". Please confirm any charge and send the revised schedule, keeping the EMI the same and shortening the tenure.\n\nThank you." }; } },
-    "fund-direct": { title: "Start new SIPs in the direct plan; move the old units once their gains are long-term", effort: "one form", time: "from the next SIP", risk: "low: the same fund, a lower cost", reversible: true, where: "IN",
+    "fund-direct": { title: "Start new monthly investments in the direct plan; move the old units once their gains are long-term", effort: "one form", time: "from the next monthly investment", risk: "low: the same fund, a lower cost", reversible: true, where: "IN",
       source: "SEBI requires every fund to offer a direct plan, with no distributor commission and so a lower expense ratio (2013 onwards). Moving units is a sale: capital-gains tax and any exit load apply.",
       preconditions: function (c) { return c.regV > 0; },
       impact: function (c) { var fy = c.regV * c.drag / 100;
@@ -10222,13 +10223,13 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
           how: "Drag = value in regular plans " + mhRs(c.regV) + " × " + c.drag + "% (the usual gap in expense ratio; your statement shows the real one)." }; },
       notes: function () { return ['<span data-where="IN">Where to find this: your consolidated account statement (CAMS or KFintech) shows "Direct" or "Regular" in each scheme name.</span>']; },
       assumes: function (c) { return c.benchSet.drag ? [] : [["drag", c.drag + "% a year of extra cost"]]; } },
-    "alloc-newmoney": { title: function (c) { return "Send new money to " + (c.al.drift > 0 ? "debt" : "equity") + (isFinite(c.al.months) ? " for " + remMo(Math.ceil(Math.min(6, c.al.months))) : ""); }, effort: "one form", time: "from this month", risk: "low", reversible: true, where: "",
+    "alloc-newmoney": { title: function (c) { return "Send new money to " + (c.al.drift > 0 ? "safer funds" : "shares") + (isFinite(c.al.months) ? " for " + remMo(Math.ceil(Math.min(6, c.al.months))) : ""); }, effort: "one form", time: "from this month", risk: "low", reversible: true, where: "",
       source: "Rebalancing practice: new money first, because it moves the mix with no sale, no tax and no exit load; the 5/25 band decides when to act.",
       preconditions: function (c) { return !!c.al && c.surplus > 0; },
       impact: function (c) { var al = c.al; return { rupeesPerMonth: null, freedYear: 0, coverGain: 0, headline: "Moves " + mhRs(al.fromNew) + " of " + mhRs(al.move) + " with no sale",
         note: "Equity " + Math.round(al.actual) + "% → target " + al.t.target + "%.", how: "Move = |" + Math.round(al.actual) + "% − " + al.t.target + "%| × " + mhRs(al.total) + ". New money = up to 6 months of your surplus " + mhRs(c.surplus) + "." }; },
       doIt: function () { return { kind: "call", label: "Reviewed: plan noted", js: "gmMhReview(0)" }; } },
-    "alloc-switch": { title: function (c) { return "Switch " + mhShort(c.al.switchAmt || c.al.move) + " from " + (c.al.drift > 0 ? "equity to debt" : "debt to equity"); }, effort: "one form", time: "at this review", risk: "medium: a sale has tax and exit-load costs", reversible: true, where: "",
+    "alloc-switch": { title: function (c) { return "Switch " + mhShort(c.al.switchAmt || c.al.move) + " from " + (c.al.drift > 0 ? "shares to safer funds" : "safer funds to shares"); }, effort: "one form", time: "at this review", risk: "medium: a sale has tax and exit-load costs", reversible: true, where: "",
       source: "Rebalancing practice, done at most twice a year; sell the units with the lowest tax and no exit load first.",
       preconditions: function (c) { return !!c.al && (c.al.switchAmt > 0 || !(c.surplus > 0)); },
       impact: function (c) { return { rupeesPerMonth: null, freedYear: 0, coverGain: 0, headline: "Brings the mix back to " + c.al.t.target + "% equity", note: "Only what new money cannot move in six months.", how: "Switch = move − 6 × surplus." }; },
@@ -10542,7 +10543,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       var prem = num(p.prem), term = num(p.term), ppt = num(p.ppt);
       var nx = new Date(t0.getFullYear(), st.getMonth(), st.getDate()); if (nx < t0) nx = new Date(t0.getFullYear() + 1, st.getMonth(), st.getDate());
       var yrs = nx.getFullYear() - st.getFullYear(), payEnd = ppt > 0 ? ppt : term > 0 ? term : Infinity;
-      if (prem > 0 && yrs < payEnd) out.push({ d: nx, kind: "policy", t: "Premium due", s: rs(prem) + " · Pay from the buffer, not a card" });
+      if (prem > 0 && yrs < payEnd) out.push({ d: nx, kind: "policy", t: "Premium due: " + (MH_DUE[p.type] || (MH_TYPES[p.type] || ["Policy"])[0]), s: rs(prem) + " · Pay from the buffer, not a card" });
       var mat = new Date(st.getFullYear() + term, st.getMonth(), st.getDate());
       if (term > 0 && mat >= t0 && (MH_SAVINGS[p.type] || p.type === "ulip")) out.push({ d: mat, kind: "policy", t: "Matures", s: "The policy pays out. Decide where it goes." });
     });
