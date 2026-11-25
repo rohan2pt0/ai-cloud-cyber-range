@@ -1,1 +1,0 @@
-Life OS Property: every flagged number and warning now shows How to fix it, the best fix open with its effect on your own numbers (standard amortisation), the rest under More ways, worked out by code with no AI (principle every-issue-has-a-path).
