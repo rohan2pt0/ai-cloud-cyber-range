@@ -8,6 +8,7 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+- Every bundled part made by someone else now ships with its licence: THIRD-PARTY-NOTICES.md lists the Tesseract.js text reader and its core wasm, the English tessdata language file (both Apache-2.0, full text beside the reader in guiding-map/ocr/) and the Jost and Instrument Serif typefaces (SIL OFL 1.1, texts beside the fonts), and the release workflow adds a source SBOM (sbom-source-TAG.cdx.json) beside the gateway image's; the launch gate third-party-notices now passes (queue third-party-notices).
 - Changelog fragments: a change writes one line in `changes/<branch>.md` and `python3 tools/changelog_fold.py` folds it into the top of [Unreleased], so parallel pull requests stop clashing on CHANGELOG.md.
 - Life OS Money: a Money health card finds thin cover, costly policies (such as a post-office endowment), overlapping health covers, idle cash, costly debt, regular-plan funds and a drifted mix, and shows each fix through the one REMEDIES engine, with term cover always in force before any surrender (every-issue-has-a-path, slice 2).
 - Every GitHub Actions build step in .github/workflows, GitHub's own included, is pinned to its full commit with a comment naming the version, so no build step written by someone else can be swapped under us; the launch gate `actions-pinned-by-commit` passes (queue pin-actions-by-commit).

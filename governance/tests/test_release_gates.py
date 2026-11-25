@@ -109,6 +109,11 @@ def test_the_release_workflow_asks_the_gate_and_stays_signed(rg, monkeypatch):
         assert not ok and "release.yml lost" in detail, lost
 
 
+def test_every_bundled_part_ships_with_its_licence_in_the_real_repo(rg):
+    ok, detail = rg.third_party_notices({})
+    assert ok, detail                                                    # the real repository
+
+
 def test_a_third_party_step_on_a_movable_tag_is_found_and_githubs_own_are_not(rg, monkeypatch):
     flow = ("permissions:\n  contents: read\njobs:\n  a:\n    steps:\n      - uses: actions/checkout@v7\n      - uses: github/codeql-action/upload-sarif@v4\n"
             "      - uses: someone/build-thing@v3\n      - uses: other/scan@" + "ab12" * 10 + "   # v2.1.0\n      - uses: ./.github/workflows/release.yml\n")
