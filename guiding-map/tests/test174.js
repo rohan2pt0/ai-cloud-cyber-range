@@ -40,7 +40,7 @@ setTimeout(() => {
   ok("a goal is found, its key result as the context", flat(w.gmFind("emergency")).some(x => x[0] === "Goals" && /Emergency fund/.test(x[1]) && /Save 6 months/.test(x[2])), texts(w.gmFind("emergency")));
   ok("a key result is found under its goal", flat(w.gmFind("months of costs")).some(x => x[0] === "Goals" && /Emergency fund/.test(x[1])), texts(w.gmFind("months of costs")));
   ok("a policy is found by what it is called", flat(w.gmFind("term")).some(x => x[0] === "Policies" && /Term/.test(x[1])), texts(w.gmFind("term")));
-  ok("a policy's context says who and how much", flat(w.gmFind("term")).every(x => /You|Family/.test(x[2])), texts(w.gmFind("term")));
+  ok("a policy's context says who and how much", flat(w.gmFind("term")).filter(x => x[0] === "Policies").every(x => /You|Family/.test(x[2])), texts(w.gmFind("term")));
   ok("what is coming up is found", flat(w.gmFind("check-in")).some(x => x[0] === "Coming up" && /Month-end money check-in/.test(x[1])), texts(w.gmFind("check-in")));
 
   // 3. matching ignores case and accents; short queries answer nothing

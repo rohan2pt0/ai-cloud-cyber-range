@@ -1,0 +1,1 @@
+Life OS Money health and the Ready for the big waves card speak everyday words: the mix fixes say safer funds and shares instead of debt and equity, new monthly investments instead of SIP, and each premium due row names its policy type so two policies in one month read as two (plain-first-everywhere, test182).
