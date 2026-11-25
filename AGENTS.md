@@ -42,6 +42,9 @@ The principles behind it:
   3. **Every day:** progress they can see; end each visit on a small win; recall a slip once and kindly, then help.
   4. **Never against them:** invite, never command (pressure makes people resist: "Mandatory" loses, "the floor is enough" wins);
      give them the choice and the off switch; no guilt, no fake urgency, no hidden costs, no dark patterns.
+- **Every issue has a path (`every-issue-has-a-path`, owner 2026-11-25):** every issue, KPI or KRI the estate flags shows its 2-3 most
+  effective fixes, computed by code from the person's own numbers, ranked by impact ÷ effort, with conditions, sources and one action;
+  never a red number alone. One engine: `REMEDIES` and `gmRemedies(issueId, ctx)` in `guiding-map/ops.js` (pure; no AI). `test172.js` holds it.
 - **See the whole (`whole-view`):** think like the great generalists. Before you build, run the **360 review** on the change and
   write the answers in the PR:
   1. **Person:** who uses this, in what moment and mood, and what do they feel at each step? (`human-first`)

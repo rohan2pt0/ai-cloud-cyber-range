@@ -2270,6 +2270,7 @@
     rent: { min: 0, max: 10000000 }, emi: { min: 0, max: 10000000 }, out: { min: 0, max: 100000000 },
     rate: { min: 0, max: 30 }, vac: { min: 0, max: 12, int: true },
     rentDay: { min: 1, max: 28, int: true }, maintDay: { min: 1, max: 28, int: true }, months: { min: 1, max: 60, int: true },
+    fee: { min: 0, max: 1000000 }, escal: { min: 0, max: 30 }, prepay: { min: 0, max: 1000000000 }, altYield: { min: 0, max: 20 },
     share: { min: 1, max: 99, int: true }, deposit: { min: 0, max: 100000000 }, maint: { min: 0, max: 10000000 }, start: { date: true }, taxDue: { date: true }
   };
   window.gmPropCalc = function (p) { return propCalc(p); };
@@ -2281,7 +2282,7 @@
       loan = num(p.loan) * 100000,
       rate = num(p.rate) / 100,
       emi = num(p.emi),
-      emiFrom = "",
+      emiFrom = "", loanRate = 0, loanTenure = 0,
       out = num(p.out),                      // \u20b9/yr: society + property tax + repairs
       vacM = Math.min(12, Math.max(0, num(p.vac)));  // clamp: 13 made annual rent negative
     // The home loan is entered once, under Loans (owner 2026-11-23): a let-out flat with no EMI of its own takes it when the loan
@@ -2289,9 +2290,9 @@
     if (!emi && (p.use || "letout") === "letout") {
       var owned = ownedProps().filter(function (q) { return q && (q.use || "letout") === "letout" && num(q.val); });
       if (num(p.loan) > 0 || (owned.length === 1 && num(p.val) > 0)) {
-        var le = 0, lr = 0;
-        (window.P && P.loans || []).forEach(function (x) { if (x && /home/i.test(String(x.type || ""))) { le += Math.max(0, num(x.emi)); lr += Math.max(0, num(x.remaining)); } });
-        if (le > 0) { emi = le; emiFrom = "loans"; if (!loan && lr > 0) loan = lr; }
+        var le = 0, lr = 0, lrate = 0, lten = 0;
+        (window.P && P.loans || []).forEach(function (x) { if (x && /home/i.test(String(x.type || ""))) { le += Math.max(0, num(x.emi)); lr += Math.max(0, num(x.remaining)); if (!lrate && num(x.rate) > 0) lrate = num(x.rate); if (!lten && num(x.tenure) > 0) lten = num(x.tenure); } });
+        if (le > 0) { emi = le; emiFrom = "loans"; if (!loan && lr > 0) loan = lr; loanRate = lrate; loanTenure = lten; }
       }
     }
     var grossAnnual = rent * 12;
@@ -2309,7 +2310,9 @@
       beOcc: rent ? (emi * 12 + out) / (rent * 12) * 100 : 0,
       cashflow: rent - emi - out / 12,
       interest: interest,
-      equity: val - loan
+      equity: val - loan,
+      // the inputs as used, for the fixes engine (every-issue-has-a-path): never re-derived elsewhere
+      loanAmt: loan, emiAmt: emi, ratePct: num(p.rate) || loanRate, tenureM: loanTenure, rentM: rent, vacM: vacM, outA: out, valAmt: val
     };
     // Tax: let-out. NAV = rent less municipal tax; 30% standard deduction; interest fully deductible.
     var muni = out * 0.25; // rough split of the outgo that is municipal tax
@@ -2326,23 +2329,303 @@
   function verdict(r, p) {
     var out = [];
     if (r.netYield && r.netYield < 2.5) out.push(["Yield is thin", "var(--red)",
-      "Net yield under 2.5% means the flat is a leveraged bet on price appreciation, not an income asset. That is a legitimate position \u2014 but hold it deliberately, not by accident."]);
+      "Net yield under 2.5% means the flat is a leveraged bet on price appreciation, not an income asset. That is a legitimate position \u2014 but hold it deliberately, not by accident.", "yield-thin"]);
     else if (r.netYield >= 3.5) out.push(["Yield is healthy for India", "var(--green)",
       "Indian residential net yields cluster around 2\u20133%. Above 3.5% is genuinely good."]);
     if (r.dscr && r.dscr < 1 && (r.emiFrom || num(p.emi))) out.push(["Rent does not cover the EMI", "var(--amber)",
-      "Every month you are topping up from salary. That is fine while the shortfall is small and the interest is tax-shielded \u2014 dangerous the moment income stops."]);
+      "Every month you are topping up from salary. That is fine while the shortfall is small and the interest is tax-shielded \u2014 dangerous the moment income stops.", "dscr-low"]);
     if (r.beOcc > 100) out.push(["Break-even occupancy above 100%", "var(--red)",
-      "Even fully let, the property does not pay for itself. Raise the rent to market, cut the outgo, or plan an exit."]);
+      "Even fully let, the property does not pay for itself. The fixes below are ranked by what they do for your own numbers.", "beocc-high"]);
     else if (r.beOcc > 85) out.push(["Break-even occupancy is tight", "var(--amber)",
-      "Two vacant months turn the year negative. Keep a dedicated buffer of two EMIs for this flat alone."]);
+      "Two vacant months turn the year negative. Keep a dedicated buffer of two EMIs for this flat alone.", "beocc-high"]);
     if (r.debtToRent > 12) out.push(["Debt is heavy against rent", "var(--amber)",
-      Math.round(r.debtToRent) + " years of gross rent would be needed to clear the loan. Above 12 is leverage doing the work, not the asset."]);
+      Math.round(r.debtToRent) + " years of gross rent would be needed to clear the loan. Above 12 is leverage doing the work, not the asset.", "debt-heavy"]);
     if (r.carryForward > 0) out.push(["Loss above the \u20b92L set-off cap", "var(--amber)",
-      "\u20b9" + Math.round(r.carryForward).toLocaleString("en-IN") + " cannot be set off against salary this year. It carries forward eight years and only ever offsets future house-property income."]);
+      "\u20b9" + Math.round(r.carryForward).toLocaleString("en-IN") + " cannot be set off against salary this year. It carries forward eight years and only ever offsets future house-property income.", "setoff-cap"]);
     if (!out.length) out.push(["Nothing structurally wrong", "var(--green)", "The numbers hold up. Re-benchmark the rent annually and leave it alone."]);
+    // an overdue paper is an issue too, and a quick win (every-issue-has-a-path)
+    if ((p.use || "letout") === "letout" && llRows(p).some(function (x) { return (x.id === "police" || (x.id === "registration" && llMH())) && x.days < 0; }))
+      out.push(["A paper for this home is still open", "var(--amber)", "A legal step, quick to close: one form, and the risk is gone.", "papers-open"]);
     return out;
   }
 
+  /* ── Every issue shows its fixes (principle every-issue-has-a-path, owner 2026-11-25) ──────────────────────────────────
+     REMEDIES maps each issue the estate flags to the fixes that can move it. A fix's impact(ctx) is a pure function of the
+     person's own numbers, by standard formulas: the amortisation EMI, rent-to-EMI cover (DSCR), break-even occupancy and debt
+     to rent in years. preconditions(ctx) says true, false or "unknown" (asked once, with a default the person can change); a
+     guard holds a fix back and says why under "What not to do". Code ranks them: hard risks first, then rupees a month per unit
+     of effort. No AI is called anywhere here: code decides, the person chooses. */
+  var REM_EFFORT = { "one call": 1, "one form": 2, "at renewal": 3, "a project": 8 };
+  function remEmi(L, ratePct, n) {            // EMI = L·i·(1+i)^n / ((1+i)^n − 1), with i the monthly rate
+    var i = ratePct / 1200; if (!(L > 0) || !(n > 0)) return 0; if (!(i > 0)) return L / n;
+    var f = Math.pow(1 + i, n); return L * i * f / (f - 1);
+  }
+  function remMonths(L, ratePct, E) {         // months left at EMI E: n = −ln(1 − i·L/E) / ln(1+i); Infinity when E does not cover the interest
+    var i = ratePct / 1200; if (!(L > 0)) return 0; if (!(E > 0)) return Infinity; if (!(i > 0)) return L / E;
+    return i * L >= E ? Infinity : -Math.log(1 - i * L / E) / Math.log(1 + i);
+  }
+  window.gmRemEmi = remEmi; window.gmRemMonths = remMonths;
+  function remMetrics(c, rent, emi, loan) {    // the same definitions as propCalc, so a before and an after never disagree
+    var eff = rent * (12 - c.vac);
+    return { dscr: emi > 0 ? eff / (emi * 12) : 0, beOcc: rent > 0 ? (emi * 12 + c.out) / (rent * 12) * 100 : 0,
+      debtToRent: rent > 0 ? loan / (rent * 12) : 0, netYield: c.val > 0 ? (eff - c.out) / c.val * 100 : 0 };
+  }
+  var REM_METRIC = {   // the number each issue is judged by, and how it reads
+    "dscr-low": ["Rent-to-EMI", "dscr", function (v) { return v.toFixed(2) + "×"; }],
+    "beocc-high": ["Break-even occupancy", "beOcc", function (v) { return Math.round(v) + "%"; }],
+    "debt-heavy": ["Debt to rent", "debtToRent", function (v) { return v.toFixed(1) + " yrs"; }],
+    "yield-thin": ["Net yield", "netYield", function (v) { return v.toFixed(2) + "%"; }]
+  };
+  function remMove(c, after) {
+    var m = REM_METRIC[c.issue]; if (!m) return {};
+    var b = remMetrics(c, c.rent, c.emi, c.loan)[m[1]], a = after[m[1]];
+    return { metric: m[0], metricBefore: m[2](b), metricAfter: m[2](a), before: b, after: a };
+  }
+  function remRs(c, n) {
+    try { return new Intl.NumberFormat(c.loc || "en-IN", { style: "currency", currency: c.cur || "INR", maximumFractionDigits: 0 }).format(Math.round(n)); }
+    catch (e) { return "₹" + Math.round(n).toLocaleString("en-IN"); }
+  }
+  function remMo(n) { n = Math.max(0, Math.round(n)); return n + (n === 1 ? " month" : " months"); }
+  function remDate(c, iso) { var d = llParse(iso); return d ? d.toLocaleDateString(c.loc || "en-IN", { day: "numeric", month: "short", year: "numeric" }) : ""; }
+  function remTaxRange(c, base) {             // the tax a deduction saves: at the person's slab when known, else 20% to 30%, each plus 4% cess
+    if (c.slab !== null && c.slab !== undefined) { var v = base * c.slab * 1.04; return { lo: v, hi: v, text: remRs(c, v) + " a year (your " + Math.round(c.slab * 100) + "% slab plus 4% cess)" }; }
+    var lo = base * 0.2 * 1.04, hi = base * 0.3 * 1.04;
+    return { lo: lo, hi: hi, text: remRs(c, lo) + " to " + remRs(c, hi) + " a year (at a 20% or 30% slab plus 4% cess)" };
+  }
+  var REM_DSCR_FAMILY = { "dscr-low": 1, "beocc-high": 1 };
+  var REM_LIB = {
+    "rate-reset": { title: "Ask your lender for a 0.25% lower rate", effort: "one call", time: "from the next EMI", risk: "low", reversible: true, where: "",
+      source: "The standard amortisation (EMI) formula; lenders' practice of a rate switch for existing borrowers for a fee; the RBI's framework on resetting floating rates on EMI loans (2023), cited by topic.",
+      preconditions: function (c) { if (!(c.loan > 0 && c.rate > 0.25 && c.emi > 0 && c.n > 0)) return false; return c.rateType === "fixed" ? "unknown" : true; },
+      preNote: function () { return "A fixed rate: ask what a switch to a floating rate costs before you count this saving."; },
+      impact: function (c) {
+        var e0 = remEmi(c.loan, c.rate, c.n), e1 = remEmi(c.loan, c.rate - 0.25, c.n), save = Math.max(0, e0 - e1), be = save > 0 ? Math.ceil(c.fee / save) : 0;
+        return Object.assign({ rupeesPerMonth: save, breakEvenMonths: be,
+          note: "Each 0.25% off saves about " + remRs(c, save) + " a month; a fee of " + remRs(c, c.fee) + " is earned back in " + remMo(be) + ". Ask your own lender first: moving to another lender adds legal and valuation costs. Many lenders shorten the tenure instead of the EMI: ask for the one you prefer.",
+          how: "EMI = L·i·(1+i)^n ÷ ((1+i)^n − 1), i = yearly rate ÷ 12. L " + remRs(c, c.loan) + ", rate " + c.rate + "% → " + (c.rate - 0.25).toFixed(2) + "%, n " + Math.round(c.n) + " months left: EMI " + remRs(c, e0) + " → " + remRs(c, e1) + ". Break-even = fee ÷ monthly saving." },
+          remMove(c, remMetrics(c, c.rent, c.emi - save, c.loan)));
+      },
+      assumes: function (c) { var a = []; if (c.feeAssumed) a.push(["fee", "a fee of " + remRs(c, c.fee)]); if (c.rateTypeAssumed) a.push(["rateType", "a floating rate"]); if (c.nAssumed) a.push(["", Math.round(c.n / 12) + " years left"]); return a; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a message to the bank", text: "Dear Sir or Madam,\n\nMy home loan of about " + remRs(c, c.loan) + " is at " + c.rate + "%. New borrowers are being offered lower rates. Please let me know the lowest rate you can offer me as an existing customer, the fee for the switch, and whether the EMI or the tenure would change.\n\nThank you." }; } },
+    "rent-renewal": { title: function (c) { return "Raise the rent by " + c.escal + "% at the renewal"; }, effort: "at renewal", time: function (c) { return c.renewal ? "from " + remDate(c, c.renewal) : "at the next renewal"; },
+      risk: "medium: a tenant may leave, so check three similar listings first", reversible: true, where: "",
+      source: "Common letting practice: a rise written into each renewal and benchmarked against comparable listings; DSCR as lenders use it (rent ÷ debt service).",
+      preconditions: function (c) { return c.rent > 0 && c.escal > 0; },
+      impact: function (c) {
+        var nr = c.rent * (1 + c.escal / 100), gain = (nr - c.rent) * (12 - c.vac) / 12;
+        return Object.assign({ rupeesPerMonth: gain, newRent: nr, newDscr: c.emi > 0 ? nr * (12 - c.vac) / (c.emi * 12) : 0,
+          note: "The rent goes from " + remRs(c, c.rent) + " to " + remRs(c, nr) + " a month.",
+          how: "New rent = rent × (1 + " + c.escal + "%). New DSCR = new rent × (12 − " + c.vac + " vacant months) ÷ (EMI " + remRs(c, c.emi) + " × 12)." },
+          remMove(c, remMetrics(c, nr, c.emi, c.loan)));
+      },
+      notes: function (c) { return c.local && c.state === "MH" ? ['<span data-where="IN-MH">In Maharashtra, leave-and-licence agreements usually run 11 months and the rise is agreed in the next agreement: a common practice, not a right to a rise.</span>'] : []; },
+      assumes: function (c) { return c.escalAssumed ? [["escal", "a " + c.escal + "% rise"]] : []; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a message to the tenant", text: "Hello,\n\nThe agreement is due for renewal" + (c.renewal ? " on " + remDate(c, c.renewal) : "") + ". I would like to renew with you. The new rent would be " + remRs(c, c.rent * (1 + c.escal / 100)) + " a month, in line with similar flats nearby. Please let me know a good time to talk.\n\nThank you." }; } },
+    "prepay": { title: function (c) { return "Prepay " + remRs(c, Math.min(c.prepay, c.loan)) + " once a year"; }, effort: "one form", time: "from the next EMI", risk: "low", reversible: false, where: "IN",
+      source: "Amortisation arithmetic; the RBI's rules that bar prepayment charges on floating-rate loans to individuals (its directions on prepayment charges for loans sanctioned or renewed from 1 Jan 2026, and earlier circulars), cited by topic.",
+      preconditions: function (c) {
+        if (!(c.loan > 0 && c.emi > 0 && c.prepay > 0 && isFinite(remMonths(c.loan, c.rate, c.emi)))) return false;
+        return c.rateType === "fixed" || c.buffer === null || c.buffer === undefined ? "unknown" : true;
+      },
+      preNote: function (c) { return c.rateType === "fixed" ? "A fixed rate: check your lender's prepayment fee first." : "Keep 6 months of spending in the buffer before you prepay: add your savings in Money to check it."; },
+      guard: function (c) {
+        if (c.buffer === null || c.buffer === undefined || !(c.bufferGap > 0)) return "";
+        var after = (c.liquid - Math.min(c.prepay, c.loan)) / c.bufferGap;
+        return after < 6 ? "Do not prepay yet: it would leave " + Math.max(0, after).toFixed(1) + " months of buffer, under the 6 to keep first. Build the buffer, then prepay." : "";
+      },
+      impact: function (c) {
+        var A = Math.min(c.prepay, c.loan), L1 = c.loan - A, n0 = remMonths(c.loan, c.rate, c.emi), n1 = remMonths(L1, c.rate, c.emi);
+        var cut = Math.max(0, n0 - n1), saved = Math.max(0, c.emi * cut - A), lower = c.emi * A / c.loan;   // EMI is linear in L, so a part-prepayment lowers it in proportion
+        var dscrWay = REM_DSCR_FAMILY[c.issue];
+        return Object.assign({ rupeesPerMonth: dscrWay ? lower : A * c.rate / 1200, monthsCut: cut, interestSaved: saved, newDebtToRent: c.rent > 0 ? L1 / (c.rent * 12) : 0,
+          note: "Keep the EMI and the loan ends " + remMo(cut) + " sooner, saving about " + remRs(c, saved) + " of interest; or ask the bank to lower the EMI by " + remRs(c, lower) + " a month instead.",
+          how: "Months left n = −ln(1 − i·L ÷ EMI) ÷ ln(1+i). L " + remRs(c, c.loan) + " → " + remRs(c, L1) + " at " + c.rate + "%, EMI " + remRs(c, c.emi) + ": " + Math.round(n0) + " → " + Math.round(n1) + " months. Interest saved = EMI × months cut − prepayment." },
+          remMove(c, remMetrics(c, c.rent, dscrWay ? c.emi - lower : c.emi, L1)));
+      },
+      assumes: function (c) { var a = []; if (c.prepayAssumed) a.push(["prepay", "one month's surplus"]); if (c.rateTypeAssumed) a.push(["rateType", "a floating rate"]); return a; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a message to the bank", text: "Dear Sir or Madam,\n\nI would like to make a part-prepayment of " + remRs(c, Math.min(c.prepay, c.loan)) + " on my home loan. Please confirm there is no charge, and reduce the " + (REM_DSCR_FAMILY[c.issue] ? "EMI" : "tenure") + " with it. Please send the revised schedule.\n\nThank you." }; } },
+    "midterm": { title: "Weigh a furnished or mid-term let", effort: "a project", time: "at the next vacancy", risk: "medium: more turnover and furnishing costs", reversible: true, where: "",
+      source: "Common letting practice: furnished and 3 to 6 month lets suit some places (near offices, hospitals, campuses) and not others.",
+      preconditions: function (c) { return c.rent > 0; },
+      impact: function () { return { rupeesPerMonth: null, note: "Verify local demand first: ask two local agents what a furnished or mid-term let fetches and how long it stays empty. We assume no premium until you know one.", how: "No number is assumed: a premium is real only where demand is." }; } },
+    "rooms": { title: "Let room by room", effort: "a project", time: "at the next vacancy", risk: "medium: more tenants to manage", reversible: true, where: "IN", foldOnly: true,
+      source: "Society bye-laws and municipal property-tax classes, which vary by city.",
+      preconditions: function (c) { return c.rent > 0 ? "unknown" : false; },
+      preNote: function () { return "Only with the society's written NOC, and after checking whether it changes the property-tax class in your city."; },
+      impact: function () { return { rupeesPerMonth: null, note: "Worth it only where shared lets are common and allowed.", how: "No number is assumed." }; } },
+    "hold-sell": { title: "A question to weigh: hold, or free the equity?", effort: "a project", time: "a decision, not a rush", risk: "high: hard to undo, with selling costs and tax", reversible: false, where: "", question: true,
+      source: "Opportunity cost: today's equity at another yield, set against the monthly top-up; price growth, costs and capital-gains tax change the answer.",
+      preconditions: function (c) { return c.dscr > 0 && c.dscr < 0.6 && c.beOcc > 150 && c.equity > 0; },
+      impact: function (c) {
+        var earn = c.equity * c.altYield / 100 / 12, top = Math.max(0, -c.cash);
+        return { rupeesPerMonth: null, headline: "Equity " + remRs(c, c.equity) + " at " + c.altYield + "%: about " + remRs(c, earn) + " a month · holding costs " + remRs(c, top) + " a month",
+          note: "Neither answer is right by itself. Price growth, selling costs, stamp duty on any next home and capital-gains tax all change it. A question for a fee-only adviser, never a push.",
+          how: "Equity = value − loan. Monthly earning = equity × " + c.altYield + "% ÷ 12. Top-up = EMI + outgo ÷ 12 − rent." };
+      },
+      assumes: function (c) { return c.altYieldAssumed ? [["altYield", "a " + c.altYield + "% yield elsewhere"]] : []; } },
+    "setoff-claim": { title: "Claim the full ₹2 lakh set-off in your return", effort: "one form", time: "at the next tax return", risk: "low", reversible: true, where: "IN",
+      source: "Income-tax rules on house property: a loss sets off against other income up to ₹2 lakh a year (old regime only); the rest carries forward 8 years against house-property income. The Income-tax Act 2025 renumbers the sections from April 2026, so we cite the topic.",
+      preconditions: function (c) { return c.regime !== "new" && c.setOff > 0; },
+      impact: function (c) { var t = remTaxRange(c, c.setOff);
+        return { rupeesPerMonth: t.lo / 12, headline: "Worth " + t.text, note: "The interest is deducted in full; the loss it makes counts against salary up to " + remRs(c, c.setOff) + " this year.",
+          how: "Set-off = min(loss, ₹2,00,000) = " + remRs(c, c.setOff) + ". Tax value = set-off × slab × 1.04 (cess). Loss = interest − (rent − municipal tax) × 70%." }; },
+      assumes: function (c) { return c.regimeAssumed ? [["regime", "the old regime"]] : []; } },
+    "setoff-joint": { title: "Each joint owner who also borrows claims their own share", effort: "one form", time: "at the next tax return", risk: "low", reversible: true, where: "IN",
+      source: "Income-tax rules on house property: co-owners are taxed on their own share, each with their own ₹2 lakh set-off limit (old regime).",
+      preconditions: function (c) { return c.regime !== "new" && c.owner === "joint" && c.borrower === "joint" && c.loss > 200000; },
+      impact: function (c) { var s = c.share / 100, both = Math.min(c.loss * s, 200000) + Math.min(c.loss * (1 - s), 200000), extra = Math.max(0, both - Math.min(c.loss, 200000)), t = remTaxRange(c, extra);
+        return { rupeesPerMonth: t.lo / 12, headline: "Another " + remRs(c, extra) + " of set-off, worth " + t.text, note: "Each claims their share of the interest in their own return.", how: "Each owner: min(loss × share, ₹2,00,000). Shares " + c.share + "% and " + (100 - c.share) + "%." }; } },
+    "setoff-carry": { title: function (c) { return "Carry " + remRs(c, c.carry) + " forward in this year's return"; }, effort: "one form", time: "at the next tax return", risk: "low", reversible: true, where: "IN",
+      source: "Income-tax rules on house property: the loss above ₹2 lakh carries forward 8 years, against house-property income only.",
+      preconditions: function (c) { return c.regime !== "new" && c.carry > 0; },
+      impact: function (c) { return { rupeesPerMonth: null, note: "It counts only against house-property income in the next 8 years, for example once the rent is higher than the interest. Show it in each return so it is not lost.", how: "Carried forward = loss − ₹2,00,000 = " + remRs(c, c.carry) + "." }; } },
+    "regime-check": { title: "Compare the two regimes once this year", effort: "one form", time: "before you file", risk: "low", reversible: true, where: "IN",
+      source: "Income-tax rules: under the new regime a house-property loss does not set off against other income; under the old regime up to ₹2 lakh does.",
+      preconditions: function (c) { return c.regime === "new" && c.setOff > 0; },
+      impact: function (c) { var t = remTaxRange(c, c.setOff);
+        return { rupeesPerMonth: null, headline: "The old regime would use " + remRs(c, c.setOff) + " of this loss: " + t.text, note: "Weigh it against the new regime's lower rates, in Money, tax levers.", how: "Set-off under the old regime = min(loss, ₹2,00,000)." }; } },
+    "police": { title: "Send the tenant's details to the police", effort: "one form", time: "today", risk: "legal: required in many Indian cities", reversible: true, where: "IN", hard: true,
+      source: "Local police orders on tenant information in many Indian cities, cited by topic.",
+      preconditions: function (c) { return !!c.policeOpen; },
+      impact: function () { return { rupeesPerMonth: null, headline: "A compliance gap closed in one form", note: "Most cities take it online; the ready message is under Next for this home.", how: "From your agreement's start date: tenant details are not yet marked as sent." }; },
+      doIt: function (c) { return { kind: "call", label: "Submitted", js: "gmLlDone(" + c.pi + ",'police','')" }; } },
+    "registration": { title: "Register the leave-and-licence agreement", effort: "one form", time: "this week", risk: "legal: registration is required in Maharashtra", reversible: true, where: "IN-MH", hard: true,
+      source: "Maharashtra rent law: leave-and-licence agreements must be registered (online registration is available).",
+      preconditions: function (c) { return !!c.regOpen && c.state === "MH"; },
+      impact: function () { return { rupeesPerMonth: null, headline: "Protects your claim on the flat and the deposit", note: "Online registration with e-KYC usually takes about an hour.", how: "From your agreement's start date: registration is not yet marked as done." }; },
+      doIt: function (c) { return { kind: "call", label: "Registered", js: "gmLlDone(" + c.pi + ",'registered','')" }; } }
+  };
+  var REMEDIES = {};
+  [["dscr-low", ["rate-reset", "rent-renewal", "prepay", "midterm", "rooms", "hold-sell"]],
+    ["beocc-high", ["rent-renewal", "rate-reset", "prepay", "midterm", "rooms", "hold-sell"]],
+    ["debt-heavy", ["prepay", "rate-reset", "rent-renewal", "hold-sell"]],
+    ["yield-thin", ["rent-renewal", "midterm", "rooms", "hold-sell"]],
+    ["setoff-cap", ["setoff-claim", "setoff-joint", "setoff-carry", "regime-check"]],
+    ["papers-open", ["police", "registration"]]].forEach(function (x) { REMEDIES[x[0]] = x[1].map(function (id) { return Object.assign({ id: id }, REM_LIB[id]); }); });
+  var REM_ISSUE = {   // what an issue says beyond its fixes: a note that applies, a warning that matters
+    "setoff-cap": function (c) {
+      var out = { notes: [], warns: [] }, nm = c.names || { me: "You", partner: "Partner" };
+      if (c.regime === "new") out.notes.push("The ₹2 lakh set-off applies under the old regime only. Under the new regime this loss does not reduce tax on salary; ask your CA what happens to it there.");
+      if (c.loan > 0 && c.owner !== c.borrower) {
+        var who = function (k) { return k === "joint" ? nm.me + " and " + nm.partner : k === "partner" ? nm.partner : nm.me; };
+        out.warns.push("The home is in " + who(c.owner) + "’s name, but " + who(c.borrower) + " pays the loan. Only an owner who is also a borrower can claim the interest, so check who files this claim with your CA.");
+      }
+      return out;
+    }
+  };
+  function remRank(a, b) {
+    return (b.hard ? 1 : 0) - (a.hard ? 1 : 0) || (a.foldOnly ? 1 : 0) - (b.foldOnly ? 1 : 0) || (a.question ? 1 : 0) - (b.question ? 1 : 0)
+      || (a.pre === true ? 0 : 1) - (b.pre === true ? 0 : 1) || (a.moves ? 0 : 1) - (b.moves ? 0 : 1) || b.score - a.score;
+  }
+  // The engine: pure. The same ctx always gives the same fixes; ctx is never changed; no storage, network or AI is touched.
+  window.gmRemedies = function (issueId, ctx) {
+    var c = Object.assign({}, ctx || {}, { issue: issueId }), fixes = [], guards = [], notes = [], warns = [];
+    (REMEDIES[issueId] || []).forEach(function (R) {
+      if (R.where && c.local === false) return;                        // Global: content true in one country only is not shown
+      var pre = R.preconditions(c); if (pre === false) return;
+      var g = R.guard ? R.guard(c) : ""; if (g) { guards.push(g); return; }
+      var im = R.impact(c) || {}, rpm = typeof im.rupeesPerMonth === "number" && isFinite(im.rupeesPerMonth) ? im.rupeesPerMonth : null;
+      if (R.notes) notes = notes.concat(R.notes(c));
+      fixes.push({ id: R.id, title: typeof R.title === "function" ? R.title(c) : R.title, effort: R.effort, time: typeof R.time === "function" ? R.time(c) : R.time,
+        risk: R.risk, reversible: !!R.reversible, where: R.where || "", source: R.source, hard: !!R.hard, foldOnly: !!R.foldOnly, question: !!R.question,
+        pre: pre === true ? true : "unknown", preNote: pre !== true && R.preNote ? R.preNote(c) : "", impact: im,
+        moves: !im.metric || Math.abs(im.after - im.before) > 1e-9,   // a fix that leaves this issue's number where it is ranks below one that moves it
+        assumes: R.assumes ? R.assumes(c) : [], doIt: R.doIt ? R.doIt(c) : null, score: rpm !== null && rpm > 0 ? rpm / (REM_EFFORT[R.effort] || 8) : -1 });
+    });
+    if (REM_ISSUE[issueId]) { var x = REM_ISSUE[issueId](c); notes = notes.concat(x.notes); warns = warns.concat(x.warns); }
+    fixes.sort(remRank);
+    return { issue: issueId, fixes: fixes, guards: guards, notes: notes, warns: warns };
+  };
+  window.GM_REMEDIES = REMEDIES;
+  // The person's own numbers for one home, read once: from propCalc, the money model and the facts given once (ask-by-frequency).
+  function remSet(v) { return v !== undefined && v !== null && String(v).trim() !== ""; }
+  function remCtx(p, pi) {
+    var r = propCalc(p), f = G("gm_facts", {}) || {}, M = null; try { M = window.gmMoney ? gmMoney() : null; } catch (e) {}
+    var loan = r.loanAmt, rate = r.ratePct, emi = r.emiAmt, n0 = remMonths(loan, rate, emi), nOk = isFinite(n0) && n0 > 0;
+    var rw = M && M.buffer ? M.buffer : null, surplus = M && isFinite(M.left) ? Math.max(0, Math.round(M.left)) : 0;
+    var gr = G("gm_region", null), own = ownKind(p), bor = p.borrower === "partner" || p.borrower === "joint" ? p.borrower : "me";
+    var slab = null;
+    if (own === "me" && window.P && num(P.gross) > 0) { var ti = num(P.gross) * 12 - 50000; slab = ti > 1000000 ? 0.3 : ti > 500000 ? 0.2 : ti > 250000 ? 0.05 : 0; }
+    var rows = (p.use || "letout") === "letout" ? llRows(p) : [], open = function (id) { return rows.some(function (x) { return x.id === id && x.days < 0; }); };
+    var st = llParse(p.start), ren = st ? llAddMonths(st, llNum(p.months) || 11) : null;
+    return { pi: pi, loan: loan, rate: rate, emi: emi, n: nOk ? n0 : (r.tenureM || 240), nAssumed: !nOk && !r.tenureM,
+      rent: r.rentM, vac: r.vacM, out: r.outA, val: r.valAmt, equity: r.equity, cash: r.cashflow, dscr: r.dscr, beOcc: r.beOcc,
+      loss: r.loss, setOff: r.setOffUsable, carry: r.carryForward,
+      rateType: p.rateType === "fixed" ? "fixed" : "floating", rateTypeAssumed: !remSet(p.rateType),
+      fee: remSet(p.fee) ? num(p.fee) : 10000, feeAssumed: !remSet(p.fee),
+      escal: remSet(p.escal) ? num(p.escal) : 5, escalAssumed: !remSet(p.escal),
+      prepay: remSet(p.prepay) ? num(p.prepay) : surplus, prepayAssumed: !remSet(p.prepay),
+      altYield: remSet(p.altYield) ? num(p.altYield) : 7, altYieldAssumed: !remSet(p.altYield),
+      liquid: rw ? rw.liquid : null, bufferGap: rw ? rw.gapM : null, buffer: rw ? rw.months : null,
+      regime: f.regime === "new" ? "new" : "old", regimeAssumed: f.regime !== "new" && f.regime !== "old",
+      slab: slab, owner: own, borrower: bor, share: ownMyShare(p), state: f.state || "", local: gr === null || gr === undefined || gr === "local",
+      policeOpen: open("police"), regOpen: open("registration"), renewal: ren && ren >= llDay(new Date()) ? llIso(ren) : "",
+      loc: "en-IN", cur: (window.P && P.cur) || "INR", names: ownNames() };
+  }
+  window.gmRemedyCtx = function (i) { var p = props()[i]; return p ? remCtx(p, i) : null; };
+  // How to fix it: the best fix open with its number and one button; the others under More ways (n); a guard says what not to do.
+  function remLine(c, x) {
+    var im = x.impact || {}; if (im.headline) return im.headline;
+    var a = im.rupeesPerMonth > 0 ? "+" + remRs(c, im.rupeesPerMonth) + " a month" : "", b = im.metric && im.metricBefore !== im.metricAfter ? im.metric + " " + im.metricBefore + " → " + im.metricAfter : "";
+    return a && b ? a + " · " + b : a || b;
+  }
+  function remFixHTML(c, R, x, best, brief) {
+    if (brief) return '<div class="gm-fix-item gm-fix-best" data-rem="' + esc(x.id) + '"><div style="font-size:13.5px;font-weight:800;color:var(--text);overflow-wrap:anywhere">' + esc(x.title) + '</div>'
+      + (remLine(c, x) ? '<div class="gm-fix-n" style="font-size:12.5px;font-weight:700;color:var(--text);margin-top:2px">' + esc(remLine(c, x)) + '</div>' : "")
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">The same step as above: one action moves both numbers.</div></div>';
+    var tid = "gmFix-" + c.pi + "-" + R.issue + "-" + x.id, im = x.impact || {}, line = remLine(c, x);
+    var h = '<div class="gm-fix-item' + (best ? " gm-fix-best" : "") + '" data-rem="' + esc(x.id) + '" style="' + (best ? "" : "padding:7px 0;border-top:1px solid var(--border)") + '">'
+      + '<div style="font-size:' + (best ? "13.5" : "12.5") + 'px;font-weight:800;color:var(--text);overflow-wrap:anywhere">' + esc(x.title) + '</div>'
+      + (line ? '<div class="gm-fix-n" style="font-size:12.5px;font-weight:700;color:var(--text);margin-top:2px;overflow-wrap:anywhere">' + esc(line) + '</div>' : "")
+      + (im.note ? '<div style="font-size:12px;color:var(--text);line-height:1.5;margin-top:2px">' + esc(im.note) + '</div>' : "")
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">' + esc(x.effort + " · " + x.time + " · risk " + x.risk + (x.reversible ? "" : " · hard to undo")) + '</div>'
+      + (x.preNote ? '<div style="font-size:11.5px;color:var(--text);margin-top:2px">' + esc(x.preNote) + '</div>' : "");
+    if (x.assumes && x.assumes.length) h += '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Assumes ' + x.assumes.map(function (a) {
+      return a[0] ? '<a href="#" class="gm-fix-ask" style="font-size:11.5px;color:var(--text);text-decoration:underline" onclick="gmRemAsk(' + c.pi + ',\'' + a[0] + '\');return false">' + esc(a[1]) + '</a>' : esc(a[1]);
+    }).join(", ") + '. Tap to change.</div>';
+    if (x.doIt && x.doIt.kind === "copy") h += '<div style="margin-top:6px"><button type="button" class="btn-sm" onclick="gmLlCopy(\'' + tid + '\')">' + esc(x.doIt.label) + '</button></div>'
+      + '<details style="margin-top:4px"><summary style="font-size:12px;cursor:pointer">See the message</summary><textarea readonly id="' + tid + '" rows="5" aria-label="' + esc(x.doIt.label) + '" style="width:100%;font-size:12px">' + esc(x.doIt.text) + '</textarea></details>';
+    else if (x.doIt && x.doIt.kind === "call") h += '<div style="margin-top:6px"><button type="button" class="btn-sm" onclick="' + esc(x.doIt.js) + '">' + esc(x.doIt.label) + '</button></div>';
+    h += '<details class="gm-fix-how" style="margin-top:4px"><summary style="font-size:11.5px;cursor:pointer;color:var(--muted)">How we worked this out</summary><div style="font-size:11.5px;line-height:1.5;color:var(--text)">'
+      + esc(im.how || "") + '<br>Source: ' + esc(x.source || "") + '</div></details>';
+    return h + '</div>';
+  }
+  function remBlockHTML(issueId, c, R, led) {
+    R = R || gmRemedies(issueId, c);
+    if (!R.fixes.length && !R.notes.length && !R.guards.length && !R.warns.length) return "";
+    var lead = R.fixes.filter(function (x) { return !x.foldOnly; })[0] || R.fixes[0], rest = R.fixes.filter(function (x) { return x !== lead; });
+    var h = '<div class="gm-fix" data-issue="' + esc(issueId) + '" id="gmFix-' + c.pi + '-' + esc(issueId) + '" role="group" aria-label="How to fix it" style="margin:6px 0 2px;padding:9px 10px;border:1px solid var(--border);border-radius:12px;background:var(--cardAlt)">'
+      + '<div style="font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">How to fix it</div>';
+    R.warns.forEach(function (w) { h += '<div class="gm-fix-warn" style="font-size:12px;line-height:1.5;border-inline-start:3px solid var(--amber);padding-inline-start:8px;margin:2px 0 6px;color:var(--text)">' + esc(w) + '</div>'; });
+    if (lead) { h += remFixHTML(c, R, lead, true, !!(led && led[lead.id])); if (led) led[lead.id] = 1; }
+    if (rest.length) h += '<details class="gm-fix-more" style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">More ways (' + rest.length + ')</summary>' + rest.map(function (x) { return remFixHTML(c, R, x, false); }).join("") + '</details>';
+    R.guards.forEach(function (g) { h += '<div class="gm-fix-not" style="font-size:12px;line-height:1.5;margin-top:6px;color:var(--text)"><b>What not to do:</b> ' + esc(g) + '</div>'; });
+    R.notes.forEach(function (n) { h += '<div class="gm-fix-note" style="font-size:11.5px;line-height:1.5;margin-top:6px;color:var(--muted)">' + n + '</div>'; });   // notes are code-written HTML (a where tag), never the person's text
+    return h + '</div>';
+  }
+  window.gmRemBlockHTML = function (issueId, c) { return remBlockHTML(issueId, c); };
+  window.gmRemAsk = function (i, k) {
+    var box = document.querySelector('details.gm-prop-nums[data-pi="' + i + '"]'); if (!box) return;
+    var outer = box.parentNode && box.parentNode.closest ? box.parentNode.closest("details") : null; if (outer) outer.open = true;
+    box.open = true; var el = box.querySelector('[data-rk="' + k + '"]'); if (!el) return;
+    try { el.scrollIntoView({ block: "center" }); } catch (e) {}
+    var t = el.matches && el.matches("input") ? el : el.querySelector("button, input"); if (t) try { t.focus(); } catch (e) {}
+  };
+  window.gmRemRegime = function (v) { var f = G("gm_facts", {}) || {}; f.regime = v === "new" ? "new" : "old"; S_("gm_facts", f); renderAll(); };
+  function remInputsHTML(p, i) {
+    var f = G("gm_facts", {}) || {}, reg = f.regime === "new" || f.regime === "old" ? f.regime : "";
+    var fld = function (k, lab, ph) { return '<label class="f-label">' + lab + '</label><input inputmode="decimal" data-rk="' + k + '" value="' + esc(keep0(p[k])) + '" placeholder="' + ph + '" onchange="gmPropSet(' + i + ',\'' + k + '\',this.value)">'; };
+    var btn = function (on, js, txt) { return '<button type="button" class="btn-sm" aria-pressed="' + on + '" style="flex:1;background:' + (on ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)") + '" onclick="' + js + '">' + txt + '</button>'; };
+    return '<div class="gm-fix-in" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)"><div style="font-size:12.5px;font-weight:800">For the fixes <span style="font-weight:500;color:var(--muted)">· each has a default</span></div>'
+      + '<label class="f-label">The loan rate is</label><div data-rk="rateType">' + ownBtns(i, "rateType", p.rateType === "fixed" ? "fixed" : p.rateType === "floating" ? "floating" : "", [["floating", "Floating"], ["fixed", "Fixed"]]) + '</div>'
+      + fld("fee", "Lender's fee for a rate cut (₹)", "10,000") + fld("escal", "Rent rise at renewal (%)", "5")
+      + fld("prepay", "A yearly prepayment you could make (₹)", "one month's surplus") + fld("altYield", "Yield the equity could earn elsewhere (%)", "7")
+      + '<label class="f-label">Your tax regime this year (all your homes)</label><div data-rk="regime" style="display:flex;gap:6px;margin-bottom:8px">'
+      + btn(reg === "old", "gmRemRegime('old')", "Old") + btn(reg === "new", "gmRemRegime('new')", "New") + '</div></div>';
+  }
+  // Which issue a weak measure belongs to, so a red number never stands alone
+  var REM_KPI = { "Rent-to-EMI cover": "dscr-low", "Monthly cash flow": "dscr-low", "Break-even occupancy": "beocc-high", "Debt-to-rental-income": "debt-heavy",
+    "Loan-to-value": "debt-heavy", "Net rental yield": "yield-thin", "Gross rental yield": "yield-thin", "Price-to-rent": "yield-thin" };
   function fmtL(x) { return "\u20b9" + (Math.round(x / 1000) / 100).toFixed(2) + "L"; }
   /* ── The landlord desk (owner, 2026-11-15; queue landlord-desk) ──────────────────────────────────────────────────────
      For each let-out home, what is due next: rent, maintenance, property tax, the renewal two months ahead, registration
@@ -2632,6 +2915,7 @@
         inputs += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
           + ' value="' + esc(keep0(p[f[0]])) + '" placeholder="e.g. ' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
       });
+      if ((p.use || "letout") === "letout") inputs += remInputsHTML(p, i);
       if (num(p.val) && num(p.rent)) {
         var noEmi = !num(p.emi) && !r.emiFrom, owes = noEmi && (num(p.loan) > 0 || (window.P && P.loans || []).some(function (x) { return x && /home/i.test(String(x.type || "")) && num(x.remaining) > 0; }));
         var rows = [
@@ -2660,6 +2944,7 @@
           "Monthly cash flow": r.cashflow >= 0 ? "g" : r.cashflow >= -5000 ? "a" : "r"
         };
         var WORD = { g: "Strong", a: "Watch", r: "Weak" };
+        var rc = remCtx(p, i), remCache = {}, remOf = function (id) { return remCache[id] || (remCache[id] = gmRemedies(id, rc)); };
         // The target behind each verdict (owner, 2026-11-20): the word alone says nothing about what "strong" means.
         var AIM = {
           "Gross rental yield": "aim 4% or more",
@@ -2685,7 +2970,12 @@
             + '<div style="font-size:10.5px;color:var(--muted);line-height:1.4">' + x[2] + '</div></div>'
             + '<div style="text-align:right;max-width:48%;overflow-wrap:anywhere"><div class="gm-num' + (vd ? " gm-v-" + vd : "") + '"' + (vd ? ' aria-label="' + x[1] + ', ' + WORD[vd] + '"' : "") + '>' + (vd ? '<span class="gm-dot" aria-hidden="true"></span>' : "") + x[1] + '</div>'
             + (vd ? '<div class="gm-vw gm-v-' + vd + '">' + WORD[vd] + '</div>' : "")
-            + (vd && AIM[x[0]] ? '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">' + AIM[x[0]] + '</div>' : "") + '</div></div>';
+            + (vd && AIM[x[0]] ? '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">' + AIM[x[0]] + '</div>' : "") + '</div></div>'
+            + (vd === "r" && REM_KPI[x[0]] ? (function () {   // a red number never stands alone: its best fix, one line, with the way to the full block
+              var b = remOf(REM_KPI[x[0]]).fixes.filter(function (f) { return !f.foldOnly; })[0]; if (!b) return "";
+              return '<div class="gm-fix-kpi" data-issue="' + REM_KPI[x[0]] + '" style="font-size:11.5px;color:var(--text);margin:-4px 0 6px;line-height:1.4">Best fix: <b>' + esc(b.title) + '</b>'
+                + (remLine(rc, b) ? ' \u00b7 ' + esc(remLine(rc, b)) : "") + ' <a href="#" class="gm-fix-ask" style="font-size:11.5px;color:var(--text);text-decoration:underline" onclick="var e=document.getElementById(\'gmFix-' + i + '-' + REM_KPI[x[0]] + '\');if(e)e.scrollIntoView({block:\'center\'});return false">How to fix it</a></div>';
+            })() : "");
         };
         h += '<div style="margin-top:12px">';
         rows.slice(0, 3).forEach(function (x) { h += metricRow(x); });
@@ -2696,14 +2986,23 @@
           h += '</div></details>';
         }
         h += '<div style="margin-top:10px">';
+        var shown = {}, led = {};
         v.forEach(function (x) {
-          h += '<div style="border-left:3px solid ' + x[1] + ';padding:6px 0 6px 9px;margin-bottom:7px">'
+          h += '<div class="gm-issue" style="border-left:3px solid ' + x[1] + ';padding:6px 0 6px 9px;margin-bottom:7px">'
             + '<div style="font-size:12.5px;font-weight:800;color:' + x[1] + '">' + x[0] + '</div>'
-            + '<div style="font-size:11.5px;color:var(--text);line-height:1.6">' + x[2] + '</div></div>';
+            + '<div style="font-size:11.5px;color:var(--text);line-height:1.6">' + x[2] + '</div>'
+            + (x[3] && !shown[x[3]] ? remBlockHTML(x[3], rc, remOf(x[3]), led) : "") + '</div>';
+          if (x[3]) shown[x[3]] = 1;
+        });
+        // a weak measure whose issue has no card of its own still gets its fixes
+        rows.forEach(function (x) {
+          var id = REM_KPI[x[0]]; if (VERDICT[x[0]] !== "r" || !id || shown[id]) return; shown[id] = 1;
+          var blk = remBlockHTML(id, rc, remOf(id), led); if (!blk) return;
+          h += '<div class="gm-issue" style="border-left:3px solid var(--red);padding:6px 0 6px 9px;margin-bottom:7px"><div style="font-size:12.5px;font-weight:800;color:var(--red)">' + x[0] + ' is weak</div>' + blk + '</div>';
         });
         h += '</div>';
       }
-      h = filledP ? hTop + h + hMid + '<details class="road-col gm-prop-nums" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:13px">The numbers (' + F.length + ') <span style="font-weight:500;color:var(--muted)">\u00b7 tap to edit</span></summary>' + inputs + '</details>'
+      h = filledP ? hTop + h + hMid + '<details class="road-col gm-prop-nums" data-pi="' + i + '" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:13px">The numbers (' + F.length + ') <span style="font-weight:500;color:var(--muted)">\u00b7 tap to edit</span></summary>' + inputs + '</details>'
         : hTop + hMid + inputs + h;
       h += '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:8px" onclick="gmPropDel(' + i + ')">Remove this property</button>';
       h += '</div></details>';
