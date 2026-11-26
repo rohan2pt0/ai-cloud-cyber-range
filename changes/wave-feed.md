@@ -1,0 +1,1 @@
+Wave watch (`./securax intel waves`): a weekly read of reputable-forum news titles and links (WEF, IMF, RBI, World Bank, OECD, CERT-In) gives each of the six horizon waves a heat, ranked by how often it was in their news in 30 days; news ranks a wave, it never writes a step (queue horizon-feed, slice 2a).
