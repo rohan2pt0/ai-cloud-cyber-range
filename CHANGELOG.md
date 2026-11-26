@@ -8,6 +8,7 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+- Life OS Money: the repo rate and CPI inflation fill in by themselves from the latest published figures (with their date and source, e.g. "RBI, 7 Oct 2026"), stay editable with a "Use the published figure" undo, and the debt-duration line and the small tactical tilt are both worked out from them, so nobody types a public number (queue published-figures, slice 1).
 - Delegation: a new builder rung on the laptop, `./securax autobuild "task" --codex`, builds through OpenAI's Codex CLI and the owner's existing ChatGPT plan (no extra cost, no shared account). It says plainly when Codex is not installed or signed in, or when the plan's usage limit is reached, so the next rung takes over.
 - Delegation: an early warning before a builder provider runs out of money. The daily backlog issue and `./securax progress` carry one plain line (amber when one is out or its credit will run out within a week, RED with the one fix after a day); a provider with no key reads "not checked here".
 - Life OS Property: an overdue paper for a let-out home is shown once, inside Next for this home, never again in the top strip or as a separate problem card; its fixes stay in the engine (plain-first-everywhere, test181).

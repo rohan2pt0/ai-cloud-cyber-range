@@ -2716,15 +2716,27 @@
       + " (" + (c.work || "salaried") + "); horizon " + Math.round(hz) + " years: " + s.hz + "; kept between 20% and 80% = " + s.v + "% equity.";
     return { strategic: v, tilt: tilt, target: eff, own: own, glide: glide, how: how + (tilt ? " Tactical tilt " + (tilt > 0 ? "+" : "−") + Math.abs(tilt) + " = " + eff + "%." : "") };
   };
-  // A personal monetary policy committee: the repo rate and CPI inflation, typed once a quarter, move only the debt duration
-  // and a tilt of at most 5 points. A high real rate makes debt pay, so equity leans down; a negative one leans it up.
+  // A personal monetary policy committee: the repo rate and CPI inflation move only the debt duration and a tilt of at
+  // most 5 points. A high real rate makes debt pay, so equity leans down; a negative one leans it up.
+  // Nobody types a public number: the latest published figures fill in from here, with their source and date, and stay
+  // editable. Update the values and dates when the RBI's MPC or MoSPI publishes the next one (the next CPI release).
+  var MH_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var PUBLISHED = {
+    repo: { value: 5.5, asOf: "2026-10-07" },
+    cpi: { value: 6.09, month: "2026-10", released: "2026-11-12", next: "2026-12-14" }
+  };
+  function mhPubDate(iso) { var d = llParse(iso); return d ? d.getDate() + " " + MH_MONTHS[d.getMonth()] + " " + d.getFullYear() : String(iso || ""); }
+  function mhPubMonth(iso) { var m = /^(\d{4})-(\d{2})$/.exec(String(iso || "")); return m ? MH_MONTHS[+m[2] - 1] + " " + m[1] : String(iso || ""); }
+  function mhPubSource(k) { var p = PUBLISHED[k]; if (!p) return ""; return k === "repo" ? "RBI, " + mhPubDate(p.asOf) : "MoSPI, " + mhPubMonth(p.month) + " (released " + mhPubDate(p.released) + ")"; }
   window.gmMhMacro = function (m) {
-    m = m || {}; var repo = num(m.repo), cpi = num(m.cpi);
-    if (!(repo > 0) || !(cpi > 0) || repo > 25 || cpi > 30) return { set: false, tilt: 0, real: null, duration: "" };
+    m = m || {};
+    var repoOwn = mhSet(m.repo), cpiOwn = mhSet(m.cpi);
+    var repo = repoOwn ? num(m.repo) : PUBLISHED.repo.value, cpi = cpiOwn ? num(m.cpi) : PUBLISHED.cpi.value;
+    if (!(repo > 0) || !(cpi > 0) || repo > 25 || cpi > 30) return { set: false, tilt: 0, real: null, duration: "", repoOwn: repoOwn, cpiOwn: cpiOwn };
     var real = repo - cpi, tilt = Math.round(mhClamp((1 - real) * 2.5, -5, 5)) || 0;
     var duration = real >= 1.5 ? "medium to long (5 to 10 years): a high real rate is worth locking in"
       : real >= 0 ? "short to medium (1 to 4 years)" : "short (under 3 years) or floating: inflation is above the policy rate";
-    return { set: true, repo: repo, cpi: cpi, real: real, tilt: tilt, duration: duration,
+    return { set: true, repo: repo, cpi: cpi, real: real, tilt: tilt, duration: duration, repoOwn: repoOwn, cpiOwn: cpiOwn,
       how: "Real rate = repo " + repo + "% − CPI " + cpi + "% = " + (real < 0 ? "−" : "") + Math.abs(real).toFixed(2) + "%. Tilt = (1 − real rate) × 2.5, kept within ±5 points = " + (tilt > 0 ? "+" : tilt < 0 ? "−" : "") + Math.abs(tilt) + "." };
   };
   // The 5/25 band: act only when the mix is more than 5 points away, or more than 25% of the target away, whichever comes first.
@@ -3033,10 +3045,19 @@
           : "Outside the band, but you have acted twice in 12 months. The next action waits until " + remDate(c, al.cad.nextAct) + ".") : "Inside the band (5 points, or 25% of the target): nothing to do.") + '</div>'
         + '<div style="margin-top:4px;color:var(--muted)">Equity = funds and stocks + half of NPS. Debt = EPF + PPF + half of NPS + cash above your buffer. Homes and gold are left out.</div>';
     }
-    var mf = function (k, lab, ph) { return '<label class="f-label">' + lab + '</label><input inputmode="decimal" data-mk="' + k + '" value="' + esc(keep0(mhState().macro[k])) + '" placeholder="' + ph + '" onchange="gmMhMacroSet(\'' + k + '\',this.value)">'; };
+    var mf = function (k, lab, ph) {
+      var own = k === "repo" ? m.repoOwn : m.cpiOwn, p = PUBLISHED[k] || {};
+      var val = own ? mhState().macro[k] : p.value;
+      var src = own ? "your figure" : mhPubSource(k);
+      var act = own ? '<a href="#" class="gm-inl" onclick="gmMhMacroSet(\'' + k + '\',\'\');return false">Use the published figure</a>'
+        : '<a href="#" class="gm-inl" onclick="gmMhAsk(\'' + k + '\');return false">change</a>';
+      return '<label class="f-label">' + lab + '</label>'
+        + '<input inputmode="decimal" data-mk="' + k + '" value="' + esc(own ? keep0(mhState().macro[k]) : "") + '" placeholder="' + ph + (own ? "" : " (now " + p.value + ")") + '" onchange="gmMhMacroSet(\'' + k + '\',this.value)">'
+        + '<div style="color:var(--muted);margin-top:2px">' + esc(val) + ' · ' + esc(src) + ' · ' + act + '</div>';
+    };
     var at = mhState().macro.at, ago = at && llParse(at) ? Math.round((llDay(new Date()) - llParse(at)) / 86400000) : null;
     h += '<div style="margin-top:8px;font-weight:700">Your monetary policy committee · once a quarter</div>'
-      + '<div style="color:var(--muted)">' + (ago !== null ? "Updated " + ago + (ago === 1 ? " day" : " days") + " ago. " : "") + 'Type the latest published figures (the RBI repo rate and CPI inflation); they are kept on this device.</div>'
+      + '<div style="color:var(--muted)">' + (ago !== null ? "Updated " + ago + (ago === 1 ? " day" : " days") + " ago. " : "") + 'The latest published figures fill in by themselves (the RBI repo rate and MoSPI CPI inflation) and stay editable; your changes are kept on this device.</div>'
       + mf("repo", "Repo rate (%)", "the RBI's latest") + mf("cpi", "CPI inflation, year on year (%)", "the latest release")
       + (m.set ? '<div style="margin-top:4px">' + esc(m.how) + ' Debt duration: ' + esc(m.duration) + '.</div>' : "")
       + '<label class="f-label">Your own equity target (%), if you prefer one</label><input inputmode="decimal" data-mk="target" value="' + esc(keep0(c.override)) + '" placeholder="worked out for you" onchange="gmMhAllocSet(this.value)">';
@@ -3235,7 +3256,9 @@
     var s = mhState(), lim = { irr: 30, infl: 30, alt: 30, sav: 30, drag: 5, tier: 3 }[k] || 1e11; s.bench[k] = mhSet(v) ? mhN(v, 0, lim) : ""; mhSave(s, "Saved: the review is worked out again.");
   };
   window.gmMhMacroSet = function (k, v) {
-    if (k !== "repo" && k !== "cpi") return; var s = mhState(); s.macro[k] = mhSet(v) ? mhN(v, 0, 30) : ""; s.macro.at = llIso(llDay(new Date())); mhSave(s, "Saved for this quarter.");
+    if (k !== "repo" && k !== "cpi") return; var s = mhState(); s.macro[k] = mhSet(v) ? mhN(v, 0, 30) : "";
+    if (mhSet(v)) s.macro.at = llIso(llDay(new Date())); else if (!mhSet(s.macro.repo) && !mhSet(s.macro.cpi)) s.macro.at = "";
+    mhSave(s, mhSet(v) ? "Saved for this quarter." : "Back to the published figure.");
   };
   window.gmMhAllocSet = function (v) { var s = mhState(); s.alloc.target = mhSet(v) ? mhN(v, 0, 100) : ""; mhSave(s, "Saved: your own target."); };
   window.gmMhReview = function (acted) {
@@ -3244,7 +3267,7 @@
     mhSave(s, acted ? "Recorded. The next rebalance waits for the band and the cadence." : "Reviewed for this quarter. Nothing more until the next review.");
   };
   window.gmMhAsk = function (k) {
-    var box = document.querySelector(".gm-mh-bench"); if (k === "target") box = document.querySelector(".gm-mh-alloc"); if (!box) return;
+    var box = document.querySelector(".gm-mh-bench"); if (k === "target" || k === "repo" || k === "cpi") box = document.querySelector(".gm-mh-alloc"); if (!box) return;
     box.open = true; var el = box.querySelector('[data-mk="' + k + '"]'); if (!el) return;
     try { el.scrollIntoView({ block: "center" }); } catch (e) {}
     var t = el.matches && el.matches("input") ? el : el.querySelector("button, input"); if (t) try { t.focus(); } catch (e) {}

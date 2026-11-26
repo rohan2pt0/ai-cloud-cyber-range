@@ -82,7 +82,8 @@ setTimeout(() => {
   const mc = w.gmMhMacro({ repo: 5.5, cpi: 3 });
   ok("macro: real rate 2.5% → tilt −4 points, a longer debt duration", mc.real === 2.5 && mc.tilt === -4 && /medium to long/.test(mc.duration));
   ok("the tilt never passes ±5 points", w.gmMhMacro({ repo: 2, cpi: 12 }).tilt === 5 && w.gmMhMacro({ repo: 12, cpi: 1 }).tilt === -5);
-  ok("no macro typed: no tilt", w.gmMhMacro({}).tilt === 0 && !w.gmMhMacro({}).set);
+  ok("no macro typed: the published figures fill in", (() => { const p0 = w.gmMhMacro({}); return p0.set && p0.repo > 0 && p0.cpi > 0 && p0.repoOwn === false && p0.cpiOwn === false; })());
+  ok("an invalid stored figure stays marked as yours, not silently replaced", (() => { const z = w.gmMhMacro({ repo: 0, cpi: 0 }); return z.set === false && z.repoOwn === true && z.cpiOwn === true; })());
   const al = w.gmMhAlloc(c);
   ok("the fixture mix is 70/30 against a 53% target", near(al.actual, 70) && al.t.target === 53 && al.breach, JSON.stringify([al.actual, al.t.target]));
   ok("inside the band: 5 points either way is no breach", !w.gmMhDrift(58, 53).breach && !w.gmMhDrift(48, 53).breach && w.gmMhDrift(58.1, 53).breach);
