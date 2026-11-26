@@ -1,0 +1,50 @@
+{
+  "about": "Six horizon waves (slowdown, prices and rates, trade shocks, health and weather, scams, AI and work) read as a weekly search of the reputable forums (WEF, IMF, RBI, World Bank, OECD, CERT-In). Only news titles, dates and links are kept, exactly as published; a title lands on a wave by its regex, and news only ranks a wave, it never writes a step. Add a wave or a forum here, never in code.",
+  "version": 1,
+  "patterns": [
+    {
+      "id": "slowdown",
+      "name": "Slowdown: the economy losing speed",
+      "match": "slowdown|recession|contraction|growth (slows|slowing|stalls|stalling|slips|slipping)|sluggish (growth|economy)|downturn",
+      "query": "(slowdown OR recession OR contraction OR downturn OR growth) (site:weforum.org OR site:imf.org OR site:rbi.org.in OR site:worldbank.org OR site:oecd.org OR site:cert-in.org.in)"
+    },
+    {
+      "id": "prices-rates",
+      "name": "Prices and rates: what things cost and what money costs",
+      "match": "inflation|deflation|interest rate|repo rate|policy rate|food prices|fuel prices|cost of living|price (rises|rising|surge|surges|jump|jumps|spike|spikes)",
+      "query": "(inflation OR deflation OR \"interest rate\" OR \"repo rate\" OR \"policy rate\" OR \"food prices\" OR \"fuel prices\" OR \"cost of living\" OR prices) (site:weforum.org OR site:imf.org OR site:rbi.org.in OR site:worldbank.org OR site:oecd.org OR site:cert-in.org.in)"
+    },
+    {
+      "id": "trade-shocks",
+      "name": "Trade shocks: tariffs, bans and broken supply chains",
+      "match": "tariff|tariffs|trade (war|wars|shock|shocks|dispute|disputes)|export ban|import ban|sanction|sanctions|supply chain",
+      "query": "(tariff OR \"trade war\" OR \"trade shock\" OR \"trade dispute\" OR \"export ban\" OR \"import ban\" OR sanctions OR \"supply chain\") (site:weforum.org OR site:imf.org OR site:rbi.org.in OR site:worldbank.org OR site:oecd.org OR site:cert-in.org.in)"
+    },
+    {
+      "id": "health-weather",
+      "name": "Health and weather: outbreaks and extremes",
+      "match": "pandemic|outbreak|epidemic|heat ?wave|flood|floods|cyclone|drought|air quality|smog|monsoon",
+      "query": "(pandemic OR outbreak OR epidemic OR heatwave OR \"heat wave\" OR flood OR cyclone OR drought OR \"air quality\" OR smog OR monsoon) (site:weforum.org OR site:imf.org OR site:rbi.org.in OR site:worldbank.org OR site:oecd.org OR site:cert-in.org.in)"
+    },
+    {
+      "id": "scams",
+      "name": "Scams: the newest ways people are tricked",
+      "match": "scam|scams|fraud|ponzi|phishing|digital arrest|identity theft|pyramid scheme",
+      "query": "(scam OR fraud OR ponzi OR phishing OR \"digital arrest\" OR \"identity theft\" OR \"pyramid scheme\") (site:weforum.org OR site:imf.org OR site:rbi.org.in OR site:worldbank.org OR site:oecd.org OR site:cert-in.org.in)"
+    },
+    {
+      "id": "ai-work",
+      "name": "AI and work: what machines are doing to jobs",
+      "match": "artificial intelligence|\\bAI\\b|automation|deepfake|chatbot|large language model|machine learning|robot (workers|takes|replaces)",
+      "query": "(\"artificial intelligence\" OR AI OR automation OR deepfake OR chatbot OR \"large language model\" OR \"machine learning\" OR robot) (site:weforum.org OR site:imf.org OR site:rbi.org.in OR site:worldbank.org OR site:oecd.org OR site:cert-in.org.in)"
+    }
+  ],
+  "search": {
+    "title": "Google News search",
+    "url": "https://news.google.com/rss/search?q={q}+when:30d&hl={hl}&gl={gl}&ceid={gl}:{lang}",
+    "link_hosts": ["news.google.com"],
+    "editions": [
+      {"region": "global", "hl": "en-US", "gl": "US", "lang": "en"}
+    ]
+  }
+}
