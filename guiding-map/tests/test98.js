@@ -1,7 +1,8 @@
 // v98: calm and real, slice 2b (owner, 2026-11-14: "too heavy"; queue calm-and-real part 3). The Menu keeps five items
 // in view (All apps, Edit profile, the theme, Install, Report) and folds the three switches under Settings (3); in start
-// simple, Today shows one card and the check-in: the five numbers wait inside "More for today", on a phone and on a
-// wider screen (no bar along the bottom). Show everything brings both back as they were.
+// simple, Today shows one card and the check-in: only the red and amber numbers stay in view after the check-in, and the
+// numbers that are fine wait inside "More for today", on a phone and on a wider screen (no bar along the bottom). Show
+// everything brings both back as they were.
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
 let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (d ? " :: " + d : ""))); };
 const prof = { name: "Fake", dob: "1990-05-15", country: "India", cur: "INR", gross: 300000, net: 200000, exp: 90000, sav: 400000,
@@ -27,11 +28,14 @@ setTimeout(() => {
   ok("the four switches and Your life are folded under a closed Settings (5)", more && !more.open && /Settings \(5\)/.test(more.querySelector("summary").textContent) && /Your life/.test(more.textContent)
     && more.querySelectorAll("button[role=switch]").length === 4);
   ok("…with their own handlers", more && /gmToggleStill/.test(more.innerHTML) && /gmToggleSmart/.test(more.innerHTML) && /gmToggleFocusShow/.test(more.innerHTML) && /gmToggleAmbient/.test(more.innerHTML));
-  // Simple Today on a phone: no numbers above the check-in; they are inside More for today, and counted.
+  // Simple Today on a phone: only the red and amber numbers in view after the check-in; green ones inside More for today.
   function check(w, label) {
     const d = w.document, sec = d.querySelector("#sections .section.active"), v = d.getElementById("gmVitals");
-    const d3 = sec && sec.querySelector(".gm-d3"), fold = sec && sec.querySelector("details.gm-simple-more");
-    ok(label + ": the numbers are inside More for today", v && fold && fold.contains(v), v ? (v.parentNode.className || v.parentNode.id) : "no vitals");
+    const d3 = sec && sec.querySelector(".gm-d3"), fold = sec && sec.querySelector("details.gm-simple-more"), att = sec && sec.querySelector(".gm-vitals-attn");
+    ok(label + ": red and amber numbers show after the check-in; green ones wait in More for today",
+      att && d3 && d3.nextElementSibling === att && v && fold && fold.contains(v)
+        && !v.querySelector("[data-state=low],[data-state=watch]") && !att.querySelector("[data-state=good]"),
+      att ? (v && fold ? "good not folded" : "no vitals") : "no red or amber shown");
     ok(label + ": nothing numeric sits before the check-in", d3 && !(v && (v.compareDocumentPosition(d3) & 4) && !fold.contains(v)));
     ok(label + ": no bar along the bottom", !d.querySelector("body > #gmVitals"));
     const n = fold ? +((fold.querySelector("summary").textContent.match(/\((\d+)\)/) || [])[1] || 0) : -1;

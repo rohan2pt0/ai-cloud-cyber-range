@@ -19418,12 +19418,28 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var anchor = d3; while (anchor.parentNode && anchor.parentNode !== s) anchor = anchor.parentNode;
     // A visible reward stays in view (test36: "your estate had your back" is never folded); everything else folds.
     var rest = []; for (var n = anchor.nextElementSibling; n; n = n.nextElementSibling) { if (!/had your back/i.test(n.textContent || "") && !(n.matches(".gm-one") || n.querySelector(".gm-one"))) rest.push(n); }   // the one next step stays too
-    // The five numbers (Today, Stack, Buffer, Saving, Net worth) are folded too: a newcomer sees one card and the check-in.
+    // The numbers that need attention stay in view (owner 2026-11-26): red and amber first, worst first (low before watch);
+    // every number that is fine waits in More for today. With none at risk, one calm line says so and no number shows.
     var vit = document.getElementById("gmVitals");
     if (vit && !s.contains(vit)) vit = null;                                  // a bar elsewhere is not Today's to fold
     if (!vit && !document.getElementById("gmVitals") && window.gmVitalsHTML) { var tmp = document.createElement("div"); tmp.innerHTML = gmVitalsHTML(); vit = tmp.firstElementChild; }
+    if (vit) {
+      var rank = { low: 0, watch: 1 }, risk = [];
+      [].slice.call(vit.children).forEach(function (t) { var st = t.getAttribute("data-state"); if (st === "low" || st === "watch") risk.push(t); });
+      if (risk.length) {
+        risk.sort(function (a, b) { return rank[a.getAttribute("data-state")] - rank[b.getAttribute("data-state")]; });
+        var att = document.createElement("div"); att.className = "gm-vitals-attn gm-inline";
+        risk.forEach(function (t) { att.appendChild(t); });
+        anchor.parentNode.insertBefore(att, anchor.nextSibling);
+      } else {
+        var fine = document.createElement("div"); fine.className = "gm-all-fine";
+        fine.textContent = "All the numbers are fine today.";
+        anchor.parentNode.insertBefore(fine, anchor.nextSibling);
+      }
+      if (!vit.children.length) vit = null;
+    }
     if (vit) { vit.classList.add("gm-inline"); rest.unshift(vit); }
-    if (rest.length >= 2) {
+    if (rest.length >= 2 || vit) {
       var det = document.createElement("details"); det.className = "gm-simple-more";
       det.innerHTML = "<summary>More for today (" + rest.length + ")</summary>";
       rest.forEach(function (x) { det.appendChild(x); }); s.appendChild(det);
@@ -19490,6 +19506,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   try {
     var st2 = document.createElement("style");
     st2.textContent = ".gm-simple-more{margin:6px 0 18px}.gm-simple-more>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600;color:var(--muted)}"
+      + ".gm-vitals-attn{display:flex;gap:8px;margin:0 0 12px}.gm-vitals-attn>div{flex:1;text-align:center;cursor:pointer;padding:4px 2px;border-radius:9px}"
+      + ".gm-all-fine{margin:0 0 12px;padding:10px 2px;font-size:13.5px;color:var(--muted)}"
       + ".gm-start{margin:0 0 12px}.gm-start,.gm-start li,.gm-start ol{color:var(--text)!important;font-weight:400!important}.gm-start>b{font-weight:600!important}.gm-start ol{margin:8px 0;padding-inline-start:20px}.gm-start li{margin:6px 0;font-size:15px;line-height:1.45}"
       + ".gm-show-all{grid-column:1/-1;margin-top:6px;font-weight:600}";
     document.head.appendChild(st2);
