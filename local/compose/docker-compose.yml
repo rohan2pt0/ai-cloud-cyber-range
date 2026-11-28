@@ -198,7 +198,7 @@ services:
 
   # ---- observability / SIEM-lite (maps to Wazuh+Sentinel+Chronicle in the cloud) ----
   loki:
-    image: grafana/loki:3.7.9
+    image: grafana/loki:3.7.10
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     command: ["-config.file=/etc/loki/local-config.yaml"]
@@ -236,7 +236,7 @@ services:
   # Unified chat UI. All traffic is pointed at the GUARDRAIL GATEWAY (not LiteLLM
   # directly), so every prompt/response passes the Red/Yellow/Green rails first.
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.13.3@sha256:46b59158e6558eeb980bc828e0f1b30238ad24d82ed84d5e5eda1dab2a082f14
+    image: ghcr.io/open-webui/open-webui:v0.13.4@sha256:d5168bfbc28609eff5bea1b438dd864cf64d185cf6582c02244865e18385b901
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     # 1.5 GB: document search embeds INSIDE this container (local model, nothing leaves the box), which needs about
     # 0.5 GB on its own; at 1 GB uploading your handbooks could kill it. Doing it in Ollama instead would evict your chat
@@ -286,7 +286,7 @@ services:
   # Private document chat (Retrieval-Augmented Generation) for RED-TIER data.
   # Talks straight to local Ollama; nothing leaves the laptop.
   anythingllm:
-    image: mintplexlabs/anythingllm:1.19.0@sha256:daf5a6ae9d363ed578e7d41e2d0668c7eaa604bd90b0ff27435f893b0906833e   # pinned (was :latest, which changes under you); 1.18.0 so nobody's data is downgraded
+    image: mintplexlabs/anythingllm:1.20.0@sha256:3e2b7bc8eb0f73a130fc575f1372bd4e7189e399a63c037497fc183c141fc0ae   # pinned (was :latest, which changes under you); 1.18.0 so nobody's data is downgraded
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 2g
     cpus: 1.5
@@ -329,7 +329,7 @@ services:
   # Online (doc 85, ./securax online setup): an outbound-only Cloudflare Tunnel to hub.<domain> and chat.<domain>, behind Cloudflare
   # Access (your sign-in). No port is published and nothing listens on the internet; it starts only when CF_TUNNEL_TOKEN is set.
   cloudflared:
-    image: cloudflare/cloudflared:2026.11.0@sha256:b94b96edf2c9c4360f8879c8580cfaa99077f19c849ec595ca2f711b27d4f344
+    image: cloudflare/cloudflared:2026.11.1@sha256:e613aadbc2d9511785d2e67a86b0c8ac18dd63a3f9af0d06faf04cbfdcb35f2d
     mem_limit: 128m
     cpus: 0.25
     profiles: ["online"]
@@ -346,7 +346,7 @@ services:
   # Automation engine (the "glue"): morning brief, email triage, data-tier router, etc.
   # Call the gateway at http://gateway:8080/v1/chat/completions from any workflow.
   n8n:
-    image: n8nio/n8n:2.47.5@sha256:e29e9cc965a16d07d989f115f729f8a1c7aff58688d4850247fa495d4d7aae2f
+    image: n8nio/n8n:2.48.6@sha256:eafe48609be09a2d56dd3628b29932a12c2e81a06ac5a309205652ea36146619
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 768m
     cpus: 1.0
